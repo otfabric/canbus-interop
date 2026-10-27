@@ -29,6 +29,12 @@ exits 1 when anything failed.
 `VCAN`, `VCAN2`, `ADMIN` (prefix of `ip link` for the interface down/up
 scenarios; `none` skips them), `REPORTS`, `WORK`.
 
+Every socket of a network namespace shares a `vcan` interface: when other
+tests use the same host (for example an implementation's own interop suite
+on vcan0), give the self-test interfaces of its own:
+`make vcan selftest VCAN=vcan10 VCAN2=vcan11`. Frames of another test on the
+same interface show up as unexpected frames and fail scenarios.
+
 ## macOS
 
 Docker Desktop's Linux kernel has no CAN modules: `make images smoke
