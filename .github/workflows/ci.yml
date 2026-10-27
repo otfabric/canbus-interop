@@ -83,3 +83,39 @@ jobs:
           name: selftest-${{ matrix.arch }}
           path: reports/
           if-no-files-found: warn
+
+  # Kernel ISO-TP on the stock Ubuntu generic kernel in a virtme-ng microVM
+  # (KVM on GitHub's amd64 runners), instead of the runner's Azure kernel,
+  # which lacks can-isotp. The images are exported to root file systems and
+  # run with chroot in the guest (scripts/chroot-run, scripts/microvm-isotp.sh).
+  # TESTING.md, "Kernel ISO-TP in a microVM".
+  isotp-microvm:
+    name: Kernel ISO-TP in a microVM (amd64)
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: KVM, QEMU and virtme-ng
+        run: |
+          sudo chmod 666 /dev/kvm
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-system-x86 busybox-static >/dev/null
+          pipx install virtme-ng
+          sudo ln -sf "$(command -v vng)" /usr/local/bin/vng
+      - name: Build the images
+        run: make -j3 --output-sync=target image-canutils image-pythoncanisotp image-pythoncan
+      - name: ISO-TP suite in the microVM
+        run: scripts/microvm-isotp.sh reports
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f reports/selftest.json ]; then
+            python3 scripts/compat-report.py reports/selftest.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: selftest-isotp-microvm
+          path: reports/
+          if-no-files-found: warn
