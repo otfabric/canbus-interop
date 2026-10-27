@@ -57,7 +57,7 @@ decodes them with cantools after canmatrix converts them to DBC.
 | `fd.arxml` | CAN FD frames (`CAN-FRAME-RX-BEHAVIOR`/`CAN-FRAME-TX-BEHAVIOR` `CAN-FD`) of 64 bytes (standard) and 12 bytes (extended), signals at the end of the payload, a signed 32-bit signal |
 | `pdu-offset.arxml` | A PDU mapped at byte 2 of its frame (`PDU-TO-FRAME-MAPPING` `START-POSITION` 16) |
 
-What both oracles (cantools 45.1.0, canmatrix 1.3.3) read the same way:
+What both oracles (cantools 45.1.1, canmatrix 1.3.3) read the same way:
 
 * `START-POSITION` of an `I-SIGNAL-TO-I-PDU-MAPPING` is the DBC start bit, in
   both byte orders (a 12-bit `MOST-SIGNIFICANT-BYTE-FIRST` signal at 20 is

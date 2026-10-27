@@ -246,7 +246,7 @@ FIXTURES = {
             {"message": "FdShort", "signals": {"Head": 3735928559, "Tail": 5553.5}},
         ]),
     "pdu-offset": dict(
-        comment="A PDU mapped at byte 2 of its frame (PDU-TO-FRAME-MAPPING START-POSITION 16). Neither cantools 45.1.0 nor "
+        comment="A PDU mapped at byte 2 of its frame (PDU-TO-FRAME-MAPPING START-POSITION 16). Neither cantools 45.1.1 nor "
                 "canmatrix 1.3.3 applies the offset: see docs/FIXTURES.md; consumers cannot use them as oracles for it",
         cluster="Offset",
         triggerings=[triggering("ShiftedTriggering", "Shifted", 0x300, "STANDARD")],

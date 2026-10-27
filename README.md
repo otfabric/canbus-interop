@@ -20,7 +20,7 @@ trusts a result against it.
 | `socketcanrs` | [socketcan-rs](https://github.com/socketcan-rs/socketcan-rs) (crate `socketcan`) | 4.0.0 | Rust | MIT | Kernel `CAN_RAW` through libc/socket2 | send, receive |
 | `scapy` | [Scapy](https://github.com/secdev/scapy) | 2.8.0 | Python | GPL-2.0-only | Kernel `CAN_RAW` (NativeCANSocket) with Scapy's own frame codec | send, receive |
 | `pythoncanisotp` | [python-can-isotp](https://github.com/pylessard/python-can-isotp) | 2.0.7 | Python | MIT | **Userspace ISO-TP** state machine over python-can | isotp-send, isotp-receive |
-| `cantools` | [cantools](https://github.com/cantools/cantools) | 45.1.0 | Python | MIT | DBC parser and signal codec | decode, encode |
+| `cantools` | [cantools](https://github.com/cantools/cantools) | 45.1.1 | Python | MIT | DBC parser and signal codec | decode, encode |
 | `canmatrix` | [canmatrix](https://github.com/ebroecker/canmatrix) | 1.3.3 | Python | BSD-2-Clause | DBC/KCD parser and signal codec | decode, encode, convert (KCD → DBC) |
 
 Capabilities per image (CAN FD, BRS, ESI, remote frames, filters, ISO-TP
