@@ -4,7 +4,7 @@
 # Cargo.toml (with Cargo.lock) are the source of truth for a build:
 # scripts/check-versions.sh fails when this file disagrees with them.
 
-interop_version: "0.1.0"
+interop_version: "0.2.0"
 contract_version: "1.1"          # docs/CONTAINER_CONTRACT.md; documents carry schemaVersion "1.0"
 fixture_schema: "1.0"            # schemas/frame.schema.json, schemas/encode-input.schema.json
 

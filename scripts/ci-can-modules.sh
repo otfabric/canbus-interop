@@ -26,6 +26,10 @@ if sudo modprobe can-isotp 2>/dev/null; then
     exit 0
 fi
 
+if [ "${CAN_ISOTP_OUT_OF_TREE:-1}" = 0 ]; then
+    echo "::notice::${kernel} has no can-isotp module; not building it (CAN_ISOTP_OUT_OF_TREE=0): the kernel ISO-TP scenarios run elsewhere (microVM job)"
+    exit 0
+fi
 echo "::notice::${kernel} has no can-isotp module; building net/can/isotp.c of Linux ${kernel%%-*} out of tree"
 build() {
     local version tag dir

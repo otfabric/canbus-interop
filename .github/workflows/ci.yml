@@ -41,10 +41,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # amd64: the runner's Azure kernel has no can-isotp; the kernel
+          # ISO-TP suite runs on a stock Ubuntu kernel in the isotp-microvm
+          # job instead of a can-isotp built out of tree here.
           - arch: amd64
             runner: ubuntu-24.04
+            suites: raw dbc logs
+            isotp_out_of_tree: "0"
+          # arm64: the runner kernel ships can-isotp (and has no /dev/kvm).
           - arch: arm64
             runner: ubuntu-24.04-arm
+            suites: raw isotp dbc logs
+            isotp_out_of_tree: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -53,6 +61,8 @@ jobs:
       - run: pip install jsonschema
 
       - name: Load the CAN modules and create vcan0, vcan1
+        env:
+          CAN_ISOTP_OUT_OF_TREE: ${{ matrix.isotp_out_of_tree }}
         run: scripts/ci-can-modules.sh && make vcan ADMIN=sudo
 
       - name: Build the images
@@ -61,7 +71,9 @@ jobs:
       - name: Smoke test
         run: make smoke
 
-      - name: Self-test
+      - name: Self-test (${{ matrix.suites }})
+        env:
+          SUITES: ${{ matrix.suites }}
         run: make selftest ADMIN=sudo
 
       - name: Validate the documents
