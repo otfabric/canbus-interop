@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/decoded.schema.json",
+  "title": "canbus-interop decode output",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "id",
+        "extended",
+        "message",
+        "signals"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "decoded"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "extended": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        },
+        "signals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "raw",
+              "physical"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "raw": {
+                "type": "string",
+                "pattern": "^-?[0-9]+$",
+                "description": "Exact raw integer (IEEE 754 signals: the bit pattern)"
+              },
+              "physical": {
+                "oneOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "enum": [
+                      "nan",
+                      "inf",
+                      "-inf"
+                    ]
+                  }
+                ]
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "id",
+        "extended",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "decode-error"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "extended": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

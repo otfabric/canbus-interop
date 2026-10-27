@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/frame.schema.json",
+  "title": "canbus-interop frame document",
+  "type": "object",
+  "required": [
+    "id",
+    "len",
+    "data"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 536870911,
+      "description": "Identifier without flag bits (error frames: the error class bits)"
+    },
+    "extended": {
+      "type": "boolean",
+      "default": false
+    },
+    "fd": {
+      "type": "boolean",
+      "default": false
+    },
+    "brs": {
+      "type": "boolean",
+      "default": false
+    },
+    "esi": {
+      "type": "boolean",
+      "default": false
+    },
+    "remote": {
+      "type": "boolean",
+      "default": false
+    },
+    "error": {
+      "type": "boolean",
+      "default": false
+    },
+    "len": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 64,
+      "description": "Payload length; for remote frames the requested length"
+    },
+    "data": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{2})*$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]{6}$"
+    },
+    "interface": {
+      "type": "string"
+    }
+  }
+}

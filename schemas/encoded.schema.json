@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/encoded.schema.json",
+  "title": "canbus-interop encode output",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "message",
+        "id",
+        "extended",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "encoded"
+        },
+        "message": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "extended": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{2})*$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "message",
+        "error"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "encode-error"
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/result.schema.json",
+  "title": "canbus-interop result document",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "type",
+    "operation"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "type": {
+      "const": "result"
+    },
+    "operation": {
+      "enum": [
+        "send",
+        "receive",
+        "capture",
+        "replay",
+        "decode",
+        "encode",
+        "isotp-send",
+        "isotp-receive",
+        "convert"
+      ]
+    },
+    "sent": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "echoed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "received": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "input": {
+      "type": "string"
+    },
+    "output": {
+      "type": "string"
+    },
+    "messages": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}
