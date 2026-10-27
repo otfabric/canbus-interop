@@ -267,7 +267,17 @@ def isotp_argv(tool, args):
     return argv
 
 
+def require_isotp():
+    """Exit 4 (environment) when the kernel has no CAN_ISOTP."""
+    import socket
+    try:
+        socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP).close()
+    except OSError as e:
+        raise cbi.interface_error("the kernel has no CAN_ISOTP (load can-isotp): %s" % e)
+
+
 def op_isotp_send(args, caps):
+    require_isotp()
     payload = cbi.isotp_payload(args)
     deadline = cbi.Deadline(args.timeout_ms)
     argv = isotp_argv("isotpsend", args) + ["-b", args.interface]
@@ -283,6 +293,7 @@ def op_isotp_send(args, caps):
 
 
 def op_isotp_receive(args, caps):
+    require_isotp()
     deadline = cbi.Deadline(args.timeout_ms)
     argv = ["stdbuf", "-oL"] + isotp_argv("isotprecv", args)
     argv += ["-b", "%X" % args.bs, "-m", "%X" % args.stmin, "-l", args.interface]

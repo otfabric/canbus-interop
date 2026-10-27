@@ -1,26 +1,46 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 #
-# ci-can-modules.sh: make the CAN modules (can, can-raw, vcan, can-isotp)
-# loadable on a GitHub-hosted Ubuntu runner. They are in the kernel's
-# linux-modules-extra package, which is not installed; when the archive has
-# no package for the running kernel yet, the one of the same kernel from the
-# release pocket is looked up by its ABI.
+# ci-can-modules.sh: make the CAN modules loadable on a GitHub-hosted Ubuntu
+# runner: can, can-raw and vcan (required) and can-isotp (kernel ISO-TP).
+#
+# They are in the kernel's linux-modules-extra package, which runners do not
+# install. Some runner kernels (linux-azure on amd64) are built without
+# CONFIG_CAN_ISOTP: then net/can/isotp.c of the same kernel version is built
+# as an out-of-tree module against the kernel headers. When that fails too,
+# the kernel ISO-TP scenarios are skipped by the self-test (the canutils
+# adapter ends its ISO-TP operations with exit 4), never reported as passed.
 set -euo pipefail
 
-mods=(can can-raw vcan can-isotp)
-if sudo modprobe -a "${mods[@]}" 2>/dev/null; then
-    echo "CAN modules already available for $(uname -r)"
+kernel=$(uname -r)
+if ! sudo modprobe -a can can-raw vcan 2>/dev/null; then
+    echo "Installing linux-modules-extra-${kernel}"
+    sudo apt-get update -q
+    sudo apt-get install -y -q "linux-modules-extra-${kernel}"
+    sudo modprobe -a can can-raw vcan
+fi
+echo "can, can-raw, vcan loaded on ${kernel}"
+
+if sudo modprobe can-isotp 2>/dev/null; then
+    echo "can-isotp loaded"
     exit 0
 fi
-kernel=$(uname -r)
-echo "Installing linux-modules-extra-${kernel}"
-sudo apt-get update -q
-if ! sudo apt-get install -y -q "linux-modules-extra-${kernel}"; then
-    echo "::warning::no linux-modules-extra-${kernel}; candidates:"
-    apt-cache search --names-only "^linux-modules-extra-${kernel%%-*}" | head -20 || true
-    find "/lib/modules/${kernel}" -name 'vcan*' -o -name 'can-isotp*' || true
-    exit 1
+
+echo "::notice::${kernel} has no can-isotp module; building net/can/isotp.c of Linux ${kernel%%-*} out of tree"
+build() {
+    local version tag dir
+    version=${kernel%%-*}                     # e.g. 6.17.0
+    tag="v${version%.0}"                      # v6.17 (a release), v6.17.3 otherwise
+    dir=$(mktemp -d)
+    sudo apt-get install -y -q "linux-headers-${kernel}" >/dev/null
+    curl -fsSL "https://raw.githubusercontent.com/torvalds/linux/${tag}/net/can/isotp.c" -o "${dir}/isotp.c" \
+        || curl -fsSL "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/net/can/isotp.c?h=${tag}" -o "${dir}/isotp.c"
+    printf 'obj-m += can-isotp.o\ncan-isotp-y := isotp.o\n' > "${dir}/Kbuild"
+    make -s -C "/lib/modules/${kernel}/build" M="${dir}" modules
+    sudo insmod "${dir}/can-isotp.ko"
+}
+if build; then
+    echo "can-isotp built from Linux source and loaded"
+else
+    echo "::warning::could not provide can-isotp on ${kernel}: the kernel ISO-TP scenarios will be skipped"
 fi
-sudo modprobe -a "${mods[@]}"
-echo "CAN modules loaded for ${kernel}"

@@ -6,10 +6,12 @@
 # Needs root (run with sudo). Idempotent.
 set -euo pipefail
 
-modprobe -a can can-raw vcan can-isotp 2>/dev/null || {
+modprobe -a can can-raw vcan 2>/dev/null || {
     echo "setup-vcan: cannot load the CAN modules; on Ubuntu install linux-modules-extra-\$(uname -r)" >&2
     exit 4
 }
+[[ -d /sys/module/can_isotp ]] || modprobe can-isotp 2>/dev/null ||
+    echo "setup-vcan: no can-isotp module: the kernel ISO-TP scenarios will be skipped" >&2
 [[ $# -gt 0 ]] || set -- vcan0 vcan1
 for ifc in "$@"; do
     ip link show "$ifc" >/dev/null 2>&1 || ip link add dev "$ifc" type vcan

@@ -653,9 +653,27 @@ def payload(args):
     return bytes(i % 251 for i in range(size)).hex()
 
 
+def kernel_has_isotp():
+    try:
+        import socket
+        socket.socket(socket.PF_CAN, socket.SOCK_DGRAM, socket.CAN_ISOTP).close()
+        return True
+    except (OSError, AttributeError):
+        return False
+
+
+# Adapters whose ISO-TP is the kernel's CAN_ISOTP.
+KERNEL_ISOTP = {"canutils"}
+
+
 def suite_isotp(caps):
     senders = [a for a in caps if "isotp-send" in caps[a]["operations"]]
     receivers = [a for a in caps if "isotp-receive" in caps[a]["operations"]]
+    if not kernel_has_isotp():
+        for a in sorted(KERNEL_ISOTP & set(senders + receivers)):
+            record("isotp", "kernel-isotp", "skip", "the kernel of this host has no CAN_ISOTP (can-isotp module)", a, a)
+        senders = [a for a in senders if a not in KERNEL_ISOTP]
+        receivers = [a for a in receivers if a not in KERNEL_ISOTP]
     for name, pargs, extra, need in ISOTP_CASES:
         count = int(pargs[pargs.index("--count") + 1]) if "--count" in pargs else 1
         for s in senders:
