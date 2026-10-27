@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/version.schema.json",
+  "title": "canbus-interop version document",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "adapter",
+    "upstream",
+    "repository",
+    "version",
+    "revision",
+    "license",
+    "language"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "adapter": {
+      "type": "string"
+    },
+    "upstream": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "license": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "isotp": {
+      "type": "string"
+    },
+    "transport": {
+      "type": "string"
+    }
+  }
+}

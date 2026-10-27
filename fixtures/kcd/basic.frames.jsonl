@@ -1,0 +1,13 @@
+# basic.kcd: patterns per message, multiplexer values 0 and 1
+{"id": 291, "extended": false, "len": 8, "data": "0000000000000000"}
+{"id": 291, "extended": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 291, "extended": false, "len": 8, "data": "0102030405060708"}
+{"id": 291, "extended": false, "len": 8, "data": "a54dca182530bb1d"}
+{"id": 1752286, "extended": true, "len": 4, "data": "00000000"}
+{"id": 1752286, "extended": true, "len": 4, "data": "ffffffff"}
+{"id": 1752286, "extended": true, "len": 4, "data": "01020304"}
+{"id": 1752286, "extended": true, "len": 4, "data": "6d132cde"}
+{"id": 512, "len": 8, "data": "0002030405060708"}
+{"id": 512, "len": 8, "data": "00237b2ed91e3f72"}
+{"id": 512, "len": 8, "data": "0102030405060708"}
+{"id": 512, "len": 8, "data": "01cb1971174494d6"}

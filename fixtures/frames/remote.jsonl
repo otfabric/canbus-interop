@@ -1,0 +1,9 @@
+# Remote transmission requests with requested lengths 0/1/4/8, 11- and 29-bit
+{"id":801,"extended":false,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":0,"data":""}
+{"id":801,"extended":false,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":1,"data":""}
+{"id":801,"extended":false,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":4,"data":""}
+{"id":801,"extended":false,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":8,"data":""}
+{"id":28036576,"extended":true,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":0,"data":""}
+{"id":28036576,"extended":true,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":1,"data":""}
+{"id":28036576,"extended":true,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":4,"data":""}
+{"id":28036576,"extended":true,"fd":false,"brs":false,"esi":false,"remote":true,"error":false,"len":8,"data":""}

@@ -1,0 +1,4 @@
+# attributes.dbc: physical values
+{"message": "EngineStatus", "signals": {"Speed": 1500.25, "Temperature": -40, "State": 2, "Mode": -4, "Ignition": 1}}
+{"message": "EngineStatus", "signals": {"Speed": 0, "Temperature": 127, "State": 3, "Mode": 3, "Ignition": 0}}
+{"message": "GatewayHeartbeat", "signals": {"Alive": 42}}

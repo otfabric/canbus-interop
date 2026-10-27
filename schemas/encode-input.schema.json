@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/encode-input.schema.json",
+  "title": "canbus-interop encode input line",
+  "type": "object",
+  "required": [
+    "message",
+    "signals"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "pattern": "^-?[0-9]+$"
+          }
+        ]
+      }
+    }
+  }
+}

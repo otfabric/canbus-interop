@@ -1,0 +1,26 @@
+# basic.dbc: patterns per message; then too short, too long, unknown id and 0x100 as an extended id (no such message)
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "0102030405060708"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "4e19426160d13374"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "0d0efcd7d71428dd"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "0102030405060708"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "77fd6a82c45866f8"}
+{"id": 512, "extended": false, "fd": false, "len": 8, "data": "a7d04284bca32c05"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "00000000"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "ffffffff"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "55555555"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "aaaaaaaa"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "01020304"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "3c6d889c"}
+{"id": 419369524, "extended": true, "fd": false, "len": 4, "data": "608a2a9b"}
+{"id": 256, "extended": false, "fd": false, "len": 4, "data": "12345678"}
+{"id": 256, "extended": false, "fd": true, "len": 12, "data": "000102030405060708090a0b"}
+{"id": 2047, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 256, "extended": true, "fd": false, "len": 4, "data": "00000000"}

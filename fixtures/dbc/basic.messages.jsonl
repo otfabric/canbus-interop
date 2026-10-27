@@ -1,0 +1,7 @@
+# basic.dbc: physical values; the third Intel line has Scaled=25.15, exactly halfway between two raw values in decimal arithmetic
+{"message": "Intel", "signals": {"U4": 5, "Cross12": 2748, "Signed8": -128, "Scaled": 25.5, "Odd13": -1024.5, "Flag": 1, "Gear": 3, "Top": 127}}
+{"message": "Intel", "signals": {"U4": 15, "Cross12": 4095, "Signed8": 127, "Scaled": -40, "Odd13": 2047.5, "Flag": 0, "Gear": 7, "Top": 0}}
+{"message": "Intel", "signals": {"U4": 0, "Cross12": 1, "Signed8": -1, "Scaled": 25.15, "Odd13": -0.5, "Flag": 1, "Gear": 0, "Top": 64}}
+{"message": "Motorola", "signals": {"M16": 4660, "MCross10": 1023, "MHigh4": 10, "MLow2": 2, "MSigned12": -512, "MNib": 15, "MS16": -100}}
+{"message": "Motorola", "signals": {"M16": 65535, "MCross10": 512, "MHigh4": 1, "MLow2": 3, "MSigned12": 511.75, "MNib": 0, "MS16": 32667}}
+{"message": "ExtendedId", "signals": {"Counter": 200, "Value24": 12345.678}}

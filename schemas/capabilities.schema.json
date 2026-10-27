@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/capabilities.schema.json",
+  "title": "canbus-interop capability document",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "adapter",
+    "operations",
+    "features"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "adapter": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+$"
+    },
+    "operations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "send",
+          "receive",
+          "capture",
+          "replay",
+          "decode",
+          "encode",
+          "isotp-send",
+          "isotp-receive",
+          "convert"
+        ]
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fd": {
+          "type": "boolean"
+        },
+        "brs": {
+          "type": "boolean"
+        },
+        "esi": {
+          "type": "boolean"
+        },
+        "remote": {
+          "type": "boolean"
+        },
+        "errorFrames": {
+          "type": "boolean"
+        },
+        "errorFramesTx": {
+          "type": "boolean"
+        },
+        "filters": {
+          "type": "boolean"
+        },
+        "invertFilters": {
+          "type": "boolean"
+        },
+        "joinFilters": {
+          "type": "boolean"
+        },
+        "recvOwn": {
+          "type": "boolean"
+        },
+        "disableLoopback": {
+          "type": "boolean"
+        },
+        "isotpFD": {
+          "type": "boolean"
+        },
+        "isotpExtendedAddressing": {
+          "type": "boolean"
+        },
+        "isotpMixedAddressing": {
+          "type": "boolean"
+        },
+        "isotpExtendedIds": {
+          "type": "boolean"
+        },
+        "dbcMultiplexing": {
+          "type": "boolean"
+        },
+        "dbcExtendedMultiplexing": {
+          "type": "boolean"
+        },
+        "dbcFD": {
+          "type": "boolean"
+        },
+        "dbcFloat": {
+          "type": "boolean"
+        },
+        "encodeRaw": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

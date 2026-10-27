@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otfabric/canbus-interop/schemas/event.schema.json",
+  "title": "canbus-interop event stream line",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "ready"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "frame"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "frame"
+        },
+        "frame": {
+          "$ref": "frame.schema.json"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "len",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "const": "message"
+        },
+        "len": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "data": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{2})*$"
+        }
+      }
+    },
+    {
+      "$ref": "decoded.schema.json"
+    },
+    {
+      "$ref": "encoded.schema.json"
+    },
+    {
+      "$ref": "result.schema.json"
+    },
+    {
+      "$ref": "error.schema.json"
+    }
+  ]
+}

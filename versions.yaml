@@ -1,0 +1,111 @@
+# Machine-readable version manifest for canbus-interop.
+# Upstream pins and base image digests are release inputs; nothing floats.
+# The Dockerfiles, adapters/*/requirements.txt and adapters/socketcanrs/
+# Cargo.toml (with Cargo.lock) are the source of truth for a build:
+# scripts/check-versions.sh fails when this file disagrees with them.
+
+interop_version: "0.1.0"
+contract_version: "1.0"          # docs/CONTAINER_CONTRACT.md; documents carry schemaVersion "1.0"
+fixture_schema: "1.0"            # schemas/frame.schema.json, schemas/encode-input.schema.json
+
+protocol:
+  name: "CAN (Classical CAN, CAN FD), ISO-TP (ISO 15765-2), DBC"
+  transport: "Linux SocketCAN on vcan (host network namespace)"
+
+base_images:
+  python: "python:3.12-slim-bookworm@sha256:6dd8b6dab6b3adc7812bab69eca5dbdc1a5cc690ad28306d234ffb4ef8ac9753"
+  debian: "debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8"
+  rust: "rust:1.95-slim-bookworm@sha256:d7482085ff5b415f84dba5647ae71606650bdef00db7aeb69f4b3d170c3e4082"
+
+implementations:
+  canutils:
+    status: implemented
+    upstream: "linux-can/can-utils"
+    repository: "https://github.com/linux-can/can-utils"
+    version: "v2025.01"            # latest release (2025-01-28)
+    revision: "01083a64ebf28cc716efe2d2fd51c141042ae34b"
+    source_sha256: "88b30feace372c4a61e6adb2534791c0cfba6123ebcca7f59bbb76580d4a6915"
+    license: "GPL-2.0-only OR BSD-3-Clause"
+    language: "C"
+    stack: "Linux kernel CAN_RAW (cansend, candump, canplayer); Linux kernel CAN_ISOTP (isotpsend, isotprecv)"
+    roles: [send, receive, capture, replay, isotp-send, isotp-receive]
+    published: true
+    note: "The image ships the source tarball of the binaries in /usr/share/src."
+
+  pythoncan:
+    status: implemented
+    upstream: "python-can"
+    repository: "https://github.com/hardbyte/python-can"
+    package: "python-can"
+    version: "4.6.1"               # latest release (2025-08-12)
+    revision: "702ec3eb79530b9242a1167c049cfe2cfec235e5"
+    license: "LGPL-3.0-only"
+    language: "Python"
+    stack: "Linux kernel CAN_RAW through Python's socket module"
+    roles: [send, receive, capture, replay]
+    published: true
+
+  socketcanrs:
+    status: implemented
+    upstream: "socketcan-rs"
+    repository: "https://github.com/socketcan-rs/socketcan-rs"
+    crate: "socketcan"
+    version: "4.0.0"               # latest release (2026-09-05)
+    revision: "cfa0d101a8c2fbaed1d5d1e7e11eb6fbdcfc30bd"
+    license: "MIT"
+    language: "Rust"
+    stack: "Linux kernel CAN_RAW through libc/socket2"
+    roles: [send, receive]
+    published: true
+
+  scapy:
+    status: implemented
+    upstream: "scapy"
+    repository: "https://github.com/secdev/scapy"
+    package: "scapy"
+    version: "2.8.0"               # latest release (2026-10-02)
+    revision: "e2e35c07bce2f40e7513e1b29a6d300d5329dbc3"
+    license: "GPL-2.0-only"
+    language: "Python"
+    stack: "Linux kernel CAN_RAW (NativeCANSocket); Scapy's own CAN/CANFD packet codec"
+    roles: [send, receive]
+    published: true
+
+  pythoncanisotp:
+    status: implemented
+    upstream: "python-can-isotp"
+    repository: "https://github.com/pylessard/python-can-isotp"
+    package: "can-isotp"
+    version: "2.0.7"               # latest release (2025-05-14)
+    revision: "4a672cecb8b5b448ebe7174447efb295550ebb90"
+    license: "MIT"
+    language: "Python"
+    stack: "Userspace ISO-TP state machine over python-can 4.6.1 (CAN_RAW)"
+    roles: [isotp-send, isotp-receive]
+    published: true
+
+  cantools:
+    status: implemented
+    upstream: "cantools"
+    repository: "https://github.com/cantools/cantools"
+    package: "cantools"
+    version: "45.1.0"              # latest release (2026-10-20)
+    revision: "68131411d777da8024e11ec79ddb7bebe92c2da0"
+    license: "MIT"
+    language: "Python"
+    stack: "DBC parser and signal codec"
+    roles: [decode, encode]
+    published: true
+
+  canmatrix:
+    status: implemented
+    upstream: "canmatrix"
+    repository: "https://github.com/ebroecker/canmatrix"
+    package: "canmatrix"
+    version: "1.3.3"               # latest PyPI release (2026-10-21)
+    revision: "b79a35dd16cf28adeaa88cc86fa16e2f689312e5"
+    license: "BSD-2-Clause"
+    language: "Python"
+    stack: "DBC/KCD parser and signal codec"
+    roles: [decode, encode, convert]
+    published: true

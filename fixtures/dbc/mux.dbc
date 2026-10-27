@@ -1,0 +1,26 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ECU1
+
+BO_ 1024 Muxed: 8 ECU1
+ SG_ Mux M : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ A0 m0 : 8|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ B0 m0 : 24|8@1- (1,0) [-128|127] "" Vector__XXX
+ SG_ A1 m1 : 8|32@1+ (0.01,0) [0|42949672.95] "" Vector__XXX
+ SG_ A2 m2 : 15|16@0+ (1,0) [0|65535] "" Vector__XXX
+ SG_ Always : 56|8@1+ (1,0) [0|255] "" Vector__XXX
+
+CM_ "Fixture of canbus-interop: simple multiplexing; Always is not multiplexed.";

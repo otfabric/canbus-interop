@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- canbus-interop fixture: a small KCD (Kayak) network definition: Intel and
+     big-endian signals, scaling, labels, an extended identifier and
+     multiplexing. -->
+<NetworkDefinition xmlns="http://kayak.2codeornot2code.org/1.0">
+  <Document name="canbus-interop KCD fixture" version="1.0" author="OT Fabric" company="OT Fabric"/>
+  <Node id="1" name="ECU1"/>
+  <Node id="2" name="ECU2"/>
+  <Bus name="Main">
+    <Message id="0x123" name="Status" length="8" interval="100">
+      <Producer><NodeRef id="1"/></Producer>
+      <Signal name="Speed" offset="0" length="16">
+        <Consumer><NodeRef id="2"/></Consumer>
+        <Value type="unsigned" slope="0.25" intercept="0" unit="rpm" min="0" max="16383.75"/>
+      </Signal>
+      <Signal name="Temp" offset="16" length="8">
+        <Value type="signed" slope="1" intercept="-40" unit="degC"/>
+      </Signal>
+      <Signal name="BigEnd" offset="24" length="12" endianess="big">
+        <Value type="unsigned"/>
+      </Signal>
+      <Signal name="State" offset="40" length="2">
+        <LabelSet>
+          <Label name="Off" value="0"/>
+          <Label name="On" value="1"/>
+          <Label name="Fault" value="3"/>
+        </LabelSet>
+      </Signal>
+    </Message>
+    <Message id="0x1ABCDE" format="extended" name="Ext" length="4">
+      <Signal name="Counter" offset="0" length="8"/>
+      <Signal name="Level" offset="8" length="24">
+        <Value type="unsigned" slope="0.001"/>
+      </Signal>
+    </Message>
+    <Message id="0x200" name="Muxed" length="8">
+      <Multiplex name="Mux" offset="0" length="4">
+        <MuxGroup count="0">
+          <Signal name="A" offset="8" length="8"/>
+        </MuxGroup>
+        <MuxGroup count="1">
+          <Signal name="B" offset="8" length="16"/>
+        </MuxGroup>
+      </Multiplex>
+      <Signal name="Tail" offset="56" length="8"/>
+    </Message>
+  </Bus>
+</NetworkDefinition>

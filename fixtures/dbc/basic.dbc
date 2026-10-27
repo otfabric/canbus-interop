@@ -1,0 +1,48 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ECU1 ECU2 GW
+
+VAL_TABLE_ GearTable 0 "Park" 1 "Reverse" 2 "Neutral" 3 "Drive" 7 "Invalid" ;
+
+BO_ 256 Intel: 8 ECU1
+ SG_ U4 : 0|4@1+ (1,0) [0|15] "" ECU2
+ SG_ Cross12 : 4|12@1+ (1,0) [0|4095] "" ECU2,GW
+ SG_ Signed8 : 16|8@1- (1,0) [-128|127] "" ECU2
+ SG_ Scaled : 24|16@1+ (0.1,-40) [-40|6513.5] "degC" ECU2
+ SG_ Odd13 : 40|13@1- (0.5,0) [-2048|2047.5] "V" ECU2
+ SG_ Flag : 53|1@1+ (1,0) [0|1] "" ECU2
+ SG_ Gear : 54|3@1+ (1,0) [0|7] "" ECU2
+ SG_ Top : 57|7@1+ (1,0) [0|127] "" ECU2
+
+BO_ 512 Motorola: 8 ECU2
+ SG_ M16 : 7|16@0+ (1,0) [0|65535] "rpm" ECU1
+ SG_ MCross10 : 19|10@0+ (1,0) [0|1023] "" ECU1
+ SG_ MHigh4 : 23|4@0+ (1,0) [0|15] "" ECU1
+ SG_ MLow2 : 25|2@0+ (1,0) [0|3] "" ECU1
+ SG_ MSigned12 : 39|12@0- (0.25,0) [-512|511.75] "A" ECU1
+ SG_ MNib : 43|4@0+ (1,0) [0|15] "" ECU1
+ SG_ MS16 : 55|16@0- (1,-100) [-32868|32667] "" ECU1
+
+BO_ 2566853172 ExtendedId: 4 GW
+ SG_ Counter : 0|8@1+ (1,0) [0|255] "" ECU1
+ SG_ Value24 : 8|24@1+ (0.001,0) [0|16777.215] "km" ECU1
+
+CM_ "Fixture of canbus-interop: Intel and Motorola layouts, bit fields across bytes, signed boundaries, scaling and offsets.";
+CM_ BU_ ECU1 "First electronic control unit";
+CM_ BO_ 256 "Little-endian signals filling all 64 bits";
+CM_ SG_ 256 Cross12 "12 bits across byte 0 and byte 1";
+CM_ SG_ 512 MCross10 "Big-endian, 10 bits across byte 2 and byte 3";
+VAL_ 256 Gear 0 "Park" 1 "Reverse" 2 "Neutral" 3 "Drive" 7 "Invalid" ;

@@ -1,0 +1,15 @@
+# fd.dbc: 64-byte and 12-byte CAN FD messages
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "55555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "52119a07d3f3e746675f0d636d91c27cb65f04a47e325e299c3ec81360dafaad045d9298052972db07af4178480c010dd89bf2c37c4d3d9a267dc75d7567c29f"}
+{"id": 1536, "extended": false, "fd": true, "len": 64, "data": "fcc3500bd7b0dbb3bc721cd6d0e397cffd58230bbc806a2e2a46c198f21bc9d5289a644957a8961df1fa1f9f5a3721d87a676a01625841ae7b61b7b3a7cc9ed1"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "000000000000000000000000"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "ffffffffffffffffffffffff"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "555555555555555555555555"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "aaaaaaaaaaaaaaaaaaaaaaaa"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "0102030405060708090a0b0c"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "a36e0499347329562d49fba0"}
+{"id": 5633, "extended": true, "fd": true, "len": 12, "data": "6cea139f629d772acee813a1"}

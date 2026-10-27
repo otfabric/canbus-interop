@@ -1,0 +1,15 @@
+# attributes.dbc: value tables incl. negative values
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "0102030405060708"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "c3289c43705fc5c3"}
+{"id": 291, "extended": false, "fd": false, "len": 8, "data": "68651dcc667d94e4"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "0000"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "ffff"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "5555"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "aaaa"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "0102"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "c4e0"}
+{"id": 292, "extended": false, "fd": false, "len": 2, "data": "fb40"}

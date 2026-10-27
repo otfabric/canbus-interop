@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+[package]
+name = "canbus-interop-socketcanrs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "canbus-interop adapter for the socketcan crate (socketcan-rs)"
+
+[dependencies]
+# The pinned upstream; netlink and dump (default features) are not used.
+socketcan = { version = "=4.0.0", default-features = false }
+
+[profile.release]
+strip = true

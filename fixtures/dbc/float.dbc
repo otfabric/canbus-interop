@@ -1,0 +1,32 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ECU1
+
+BO_ 1792 Floats: 8 ECU1
+ SG_ F32 : 0|32@1- (1,0) [-3.4E+038|3.4E+038] "" Vector__XXX
+ SG_ F32B : 39|32@0- (1,0) [-3.4E+038|3.4E+038] "" Vector__XXX
+
+BO_ 1793 Double: 8 ECU1
+ SG_ F64 : 0|64@1- (1,0) [-1.7E+308|1.7E+308] "" Vector__XXX
+
+BO_ 1794 ScaledFloat: 4 ECU1
+ SG_ SF : 0|32@1- (2,1) [-1E+038|1E+038] "" Vector__XXX
+
+CM_ "Fixture of canbus-interop: IEEE 754 single and double precision signals (SIG_VALTYPE_).";
+SIG_VALTYPE_ 1792 F32 : 1;
+SIG_VALTYPE_ 1792 F32B : 1;
+SIG_VALTYPE_ 1793 F64 : 2;
+SIG_VALTYPE_ 1794 SF : 1;

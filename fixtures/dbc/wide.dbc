@@ -1,0 +1,28 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ECU1
+
+BO_ 768 Wide64U: 8 ECU1
+ SG_ U64 : 0|64@1+ (1,0) [0|18446744073709551615] "" Vector__XXX
+
+BO_ 769 Wide64S: 8 ECU1
+ SG_ S64 : 7|64@0- (1,0) [-9223372036854775808|9223372036854775807] "" Vector__XXX
+
+BO_ 770 Mixed32: 8 ECU1
+ SG_ U32 : 0|32@1+ (1,0) [0|4294967295] "" Vector__XXX
+ SG_ S32 : 39|32@0- (1,0) [-2147483648|2147483647] "" Vector__XXX
+
+CM_ "Fixture of canbus-interop: 64-bit raw values that a float64 cannot hold exactly.";
