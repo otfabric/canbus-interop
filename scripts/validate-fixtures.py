@@ -58,7 +58,9 @@ def main():
     ev = jsonschema.Draft202012Validator(schema("encode-input.schema.json")) if jsonschema else None
     frame_files = glob.glob(os.path.join(ROOT, "fixtures", "frames", "*.jsonl")) + \
         glob.glob(os.path.join(ROOT, "fixtures", "dbc", "*.frames.jsonl")) + \
-        glob.glob(os.path.join(ROOT, "fixtures", "kcd", "*.frames.jsonl"))
+        glob.glob(os.path.join(ROOT, "fixtures", "kcd", "*.frames.jsonl")) + \
+        glob.glob(os.path.join(ROOT, "fixtures", "arxml", "*.frames.jsonl")) + \
+        [os.path.join(ROOT, "fixtures", "logs", "frames.jsonl")]
     for path in sorted(frame_files):
         for n, d in lines(path):
             count += 1
@@ -82,6 +84,30 @@ def main():
                 for s in d["signals"]:
                     if s not in messages[d["message"]]:
                         errors.append("%s:%d: no signal %s in %s" % (path, n, s, d["message"]))
+    # ARXML: messages are CAN-FRAME short names, signals I-SIGNAL short names
+    # mapped into the frame's PDU (the fixtures map one PDU per frame).
+    for path in sorted(glob.glob(os.path.join(ROOT, "fixtures", "arxml", "*.messages.jsonl"))):
+        xml = open(path.replace(".messages.jsonl", ".arxml")).read()
+        pdu_signals = {}
+        for m in re.finditer(r"<I-SIGNAL-I-PDU>\s*<SHORT-NAME>(\w+)</SHORT-NAME>(.*?)</I-SIGNAL-I-PDU>", xml, re.S):
+            pdu_signals[m.group(1)] = set(re.findall(r"/Signals/(\w+)</I-SIGNAL-REF>", m.group(2)))
+        messages = {}
+        for m in re.finditer(r"<CAN-FRAME>\s*<SHORT-NAME>(\w+)</SHORT-NAME>(.*?)</CAN-FRAME>", xml, re.S):
+            pdus = re.findall(r"/Pdus/(\w+)</PDU-REF>", m.group(2))
+            messages[m.group(1)] = set().union(*(pdu_signals.get(p, set()) for p in pdus))
+        for n, d in lines(path):
+            count += 1
+            if ev:
+                errors += ["%s:%d: %s" % (path, n, e.message) for e in ev.iter_errors(d)]
+            if d["message"] not in messages:
+                errors.append("%s:%d: no frame %s in the ARXML" % (path, n, d["message"]))
+            else:
+                for sig in d["signals"]:
+                    if sig not in messages[d["message"]]:
+                        errors.append("%s:%d: no signal %s in %s" % (path, n, sig, d["message"]))
+    for arxml in sorted(glob.glob(os.path.join(ROOT, "fixtures", "arxml", "*.arxml"))):
+        if not os.path.exists(arxml[:-6] + ".frames.jsonl"):
+            errors.append("%s: no .frames.jsonl vectors" % arxml)
     for dbc in sorted(glob.glob(os.path.join(ROOT, "fixtures", "dbc", "*.dbc"))):
         base = dbc[:-4]
         if not os.path.exists(base + ".frames.jsonl"):

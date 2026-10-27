@@ -1,12 +1,18 @@
 # Container contract
 
-Version: **1.0** (`contract_version` in [versions.yaml](../versions.yaml))
+Version: **1.1** (`contract_version` in [versions.yaml](../versions.yaml))
 
 Every adapter image exposes the same commands, flags, JSON documents and exit
 codes. Consumers (go-canbus's `interop/` suite, this repository's self-test)
 depend on this document and on [`schemas/`](../schemas), never on an adapter's
 source. A breaking change bumps the major version, an addition the minor one.
-Every JSON document carries `"schemaVersion": "1.0"`.
+Every JSON document carries `"schemaVersion": "1.0"`: it names the
+compatible line and changes only with the major version.
+
+| Version | Change |
+|---------|--------|
+| 1.0 | First release (canbus-interop v0.1.0) |
+| 1.1 | [`log-convert`](#log-convert-pythoncan) (pythoncan): Vector ASC, Vector BLF, PEAK TRC, CSV and candump logs through python-can's readers and writers, `.jsonl` frame documents; capabilities `logAsc`, `logBlf`, `logTrc`, `logCsv`; result field `frames`. [ARXML](#arxml) databases for `decode`, `encode` (cantools, canmatrix) and `convert` (canmatrix); capability `arxml`. Fixtures `fixtures/logs/` and `fixtures/arxml/`. Additions only (canbus-interop v0.2.0) |
 
 ## Image layout
 
@@ -32,6 +38,7 @@ Every JSON document carries `"schemaVersion": "1.0"`.
 | `decode` | Decode frames with a database (`--db`) |
 | `encode` | Encode messages with a database (`--db`) |
 | `convert` | Convert a database between formats (`--input`, `--output`) |
+| `log-convert` | Convert a CAN trace between log formats (`--input`, `--output`; 1.1) |
 | `isotp-send` | Send ISO-TP messages |
 | `isotp-receive` | Receive ISO-TP messages |
 
@@ -118,6 +125,27 @@ formats the stack supports, chosen by file extension (e.g. `.kcd` to
 `.dbc`). Result `{"type":"result","operation":"convert","input":"...","output":"...","messages":<n>}`.
 Files are exchanged through a mounted directory (the self-test mounts `/work`).
 
+### ARXML
+
+(1.1) With feature `arxml`, `decode` and `encode` take an AUTOSAR 4 ARXML
+system description as `--db` (`*.arxml`), and canmatrix `convert` reads it
+(`.arxml` to `.dbc`). What both oracles read consistently, and where they
+fall short (a PDU not at bit 0 of its frame), is in
+[FIXTURES.md](FIXTURES.md#arxml-fixturesarxml).
+
+### `log-convert` (pythoncan)
+
+(1.1) `log-convert --input <file> --output <file>` reads a CAN trace with
+python-can's `LogReader` and writes it with its `Logger`, each format
+chosen by extension: `.log` (candump), `.asc` (Vector ASC, feature
+`logAsc`), `.blf` (Vector BLF, `logBlf`), `.trc` (PEAK TRC, written as
+version 2.1, `logTrc`), `.csv` (`logCsv`) and `.jsonl` (frame documents,
+lossless both ways). Result
+`{"type":"result","operation":"log-convert","input":"...","output":"...","frames":<n>}`
+(`frames`: frames handed to the writer). Files go through a mounted
+directory. What each format keeps is measured in
+[LOG_FORMATS.md](LOG_FORMATS.md): only BLF and `.jsonl` are lossless.
+
 ### `isotp-send` / `isotp-receive`
 
 | Flag | Meaning |
@@ -182,6 +210,8 @@ remote frames); `timestamp` and `interface` are optional in input.
 | `isotpFD`, `isotpExtendedAddressing`, `isotpMixedAddressing`, `isotpExtendedIds` | ISO-TP over CAN FD, address modes, 29-bit identifiers |
 | `dbcMultiplexing`, `dbcExtendedMultiplexing`, `dbcFD`, `dbcFloat` | DBC constructs the stack decodes |
 | `encodeRaw` | `encode --raw` |
+| `arxml` | (1.1) `decode`/`encode`/`convert` accept AUTOSAR 4 ARXML |
+| `logAsc`, `logBlf`, `logTrc`, `logCsv` | (1.1) `log-convert` reads and writes the format |
 
 Every document is described by a JSON Schema in [`schemas/`](../schemas):
 `capabilities`, `version`, `frame`, `event` (every line of an operation's

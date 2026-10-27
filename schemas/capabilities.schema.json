@@ -31,7 +31,8 @@
           "encode",
           "isotp-send",
           "isotp-receive",
-          "convert"
+          "convert",
+          "log-convert"
         ]
       }
     },
@@ -98,6 +99,26 @@
         },
         "encodeRaw": {
           "type": "boolean"
+        },
+        "arxml": {
+          "type": "boolean",
+          "description": "decode and encode accept AUTOSAR 4 ARXML databases (contract 1.1)"
+        },
+        "logAsc": {
+          "type": "boolean",
+          "description": "log-convert reads and writes Vector ASC (contract 1.1)"
+        },
+        "logBlf": {
+          "type": "boolean",
+          "description": "log-convert reads and writes Vector BLF (contract 1.1)"
+        },
+        "logTrc": {
+          "type": "boolean",
+          "description": "log-convert reads and writes PEAK TRC (contract 1.1)"
+        },
+        "logCsv": {
+          "type": "boolean",
+          "description": "log-convert reads and writes python-can CSV (contract 1.1)"
         }
       }
     }
