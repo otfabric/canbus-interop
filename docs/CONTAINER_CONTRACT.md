@@ -164,7 +164,7 @@ remote frames); `timestamp` and `interface` are optional in input.
 
 ```json
 {"schemaVersion":"1.0","adapter":"canutils","operations":["send","receive",...],
- "features":{"fd":true,"brs":true,"esi":false,"remote":true,"errorFrames":true,
+ "features":{"fd":true,"brs":true,"esi":true,"remote":true,"errorFrames":true,"errorFramesTx":true,
    "filters":true,"invertFilters":true,"joinFilters":true,"recvOwn":true,
    "isotpFD":true,"isotpExtendedAddressing":true,"isotpMixedAddressing":true,
    "isotpExtendedIds":true,"dbcMultiplexing":true,"dbcExtendedMultiplexing":true,
@@ -176,6 +176,7 @@ remote frames); `timestamp` and `interface` are optional in input.
 | `fd`, `brs`, `remote` | send and receive CAN FD frames / with bit-rate switch / remote frames |
 | `esi` | transmit a frame with the ESI flag (every receiver reports it) |
 | `errorFrames` | `--error-mask` (receive error frames) |
+| `errorFramesTx` | `send` of frame documents with `"error":true` (raw `CAN_ERR_FLAG` frames; only `vcan` lets userspace inject them) |
 | `filters`, `invertFilters`, `joinFilters` | `--filter`, `:inv`, `--join-filters` |
 | `recvOwn`, `disableLoopback` | `send --recv-own`, `send --no-loopback` |
 | `isotpFD`, `isotpExtendedAddressing`, `isotpMixedAddressing`, `isotpExtendedIds` | ISO-TP over CAN FD, address modes, 29-bit identifiers |

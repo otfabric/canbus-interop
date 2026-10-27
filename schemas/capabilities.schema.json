@@ -54,6 +54,9 @@
         "errorFrames": {
           "type": "boolean"
         },
+        "errorFramesTx": {
+          "type": "boolean"
+        },
         "filters": {
           "type": "boolean"
         },

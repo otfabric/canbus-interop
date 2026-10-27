@@ -429,7 +429,12 @@ def run(adapter, capabilities, version, handlers):
     caps.update(capabilities)
     caps["operations"] = [op for op in ALL_OPERATIONS if op in handlers]
     try:
-        args = build_parser(adapter).parse_args(sys.argv[1:] or ["print-capabilities"])
+        argv = sys.argv[1:] or ["print-capabilities"]
+        if argv[0] in ALL_OPERATIONS and argv[0] not in handlers:
+            # Before the flags: an unsupported operation is reported as such,
+            # not as a usage error about its required flags.
+            raise unsupported("operation %s is not supported by %s" % (argv[0], adapter))
+        args = build_parser(adapter).parse_args(argv)
         cmd = args.command
         if cmd == "print-capabilities":
             emit(caps)
