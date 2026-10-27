@@ -27,6 +27,13 @@ CAPABILITIES = {
         "joinFilters": False,
         "recvOwn": True,
         "disableLoopback": True,
+        # log-convert: python-can's own readers and writers of these
+        # formats. What survives a round trip per format is in
+        # docs/LOG_FORMATS.md (BLF: everything; ASC, TRC, CSV: lossy).
+        "logAsc": True,
+        "logBlf": True,
+        "logTrc": True,
+        "logCsv": True,
     },
 }
 
@@ -174,10 +181,66 @@ def op_replay(args, caps):
     cbi.emit(cbi.result("replay", sent=sent))
 
 
+# log-convert: files go through python-can's LogReader/Logger, chosen by
+# extension; .jsonl is the contract's frame documents (lossless), so a
+# consumer sees exactly what python-can read or will write.
+LOG_EXTENSIONS = (".log", ".asc", ".blf", ".trc", ".csv", ".jsonl")
+
+
+def _ext(path):
+    ext = os.path.splitext(path)[1].lower()
+    if ext not in LOG_EXTENSIONS:
+        raise cbi.usage("%s: unsupported log format %r (one of %s)" % (path, ext, ", ".join(LOG_EXTENSIONS)))
+    return ext
+
+
+def _read_log(path):
+    if _ext(path) == ".jsonl":
+        for doc in cbi.read_json_lines(path):
+            fr = cbi.Frame(doc)
+            msg = to_message(fr)
+            if "timestamp" in doc:
+                msg.timestamp = float(doc["timestamp"])
+            yield msg
+        return
+    kwargs = {}
+    if _ext(path) == ".asc":
+        # Absolute times: the Begin Triggerblock date plus each offset.
+        kwargs["relative_timestamp"] = False
+    for msg in can.LogReader(path, **kwargs):
+        yield msg
+
+
+def op_log_convert(args, caps):
+    out_ext = _ext(args.output)
+    msgs = _read_log(args.input)
+    n = 0
+    try:
+        if out_ext == ".jsonl":
+            import json
+            with open(args.output, "w") as f:
+                for msg in msgs:
+                    doc = from_message(msg)
+                    doc.pop("interface", None)
+                    f.write(json.dumps(doc) + "\n")
+                    n += 1
+        else:
+            with can.Logger(args.output) as w:
+                for msg in msgs:
+                    w.on_message_received(msg)
+                    n += 1
+    except cbi.AdapterError:
+        raise
+    except Exception as e:
+        raise cbi.io_error("log-convert: %s: %s" % (type(e).__name__, e))
+    cbi.emit(cbi.result("log-convert", input=args.input, output=args.output, frames=n))
+
+
 if __name__ == "__main__":
     cbi.run(ADAPTER, CAPABILITIES, VERSION, {
         "send": op_send,
         "receive": op_receive,
         "capture": op_capture,
         "replay": op_replay,
+        "log-convert": op_log_convert,
     })
