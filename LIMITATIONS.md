@@ -17,6 +17,11 @@
   receiver's socket buffer. `burst-unpaced` only asserts order and reports
   the loss; the paced `frames-burst` (250 µs between frames, about a 500
   kbit/s bus) must be lossless.
+* **Userspace ISO-TP at STmin 0.** python-can-isotp as receiver, advertising
+  STmin 0 and block size 0, occasionally misses consecutive frames of long
+  messages (the kernel drops them from its full socket buffer, then the
+  sequence number is wrong). The 5000-byte scenarios therefore use STmin 1 ms;
+  up to 4095 bytes run at STmin 0.
 * **ISO-TP overflow and wait frames** (`FC.WAIT`, `FC.OVFLW`) cannot be
   provoked through the contract: neither isotprecv nor python-can-isotp can
   be told to answer with them. The `injected-*` scenarios cover invalid

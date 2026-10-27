@@ -601,7 +601,10 @@ ISOTP_CASES = [
     ("ff-8", ["--size", "8"], [], []),
     ("mf-100", ["--size", "100"], [], []),
     ("mf-4095", ["--size", "4095"], [], []),
-    ("ff-escape-5000", ["--size", "5000"], [], []),
+    # STmin 1 ms: at STmin 0 a userspace receiver (python-can-isotp) cannot
+    # always keep up with 700 consecutive frames and the kernel drops some
+    # from its socket buffer (wrong sequence number); see LIMITATIONS.md.
+    ("ff-escape-5000", ["--size", "5000"], ["--stmin", "01"], []),
     ("bs-2", ["--size", "300"], ["--bs", "2"], []),
     ("bs-1-stmin-5ms", ["--size", "120"], ["--bs", "1", "--stmin", "05"], []),
     ("stmin-300us", ["--size", "200"], ["--stmin", "F3"], []),
@@ -615,7 +618,7 @@ ISOTP_CASES = [
      ["isotpExtendedIds"]),
     ("fd-sf-escape-50", ["--size", "50"], ["--fd", "--tx-dl", "64"], ["isotpFD"]),
     ("fd-mf-1000", ["--size", "1000"], ["--fd", "--tx-dl", "64"], ["isotpFD"]),
-    ("fd-mf-5000", ["--size", "5000"], ["--fd", "--tx-dl", "64"], ["isotpFD"]),
+    ("fd-mf-5000", ["--size", "5000"], ["--fd", "--tx-dl", "64", "--stmin", "01"], ["isotpFD"]),
 ]
 
 
