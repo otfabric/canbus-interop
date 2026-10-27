@@ -1,0 +1,55 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: Engine Gateway Dash
+
+VAL_TABLE_ OnOff 0 "Off" 1 "On" ;
+
+BO_ 291 EngineStatus: 8 Engine
+ SG_ Speed : 0|16@1+ (0.25,0) [0|16383.75] "rpm" Gateway,Dash
+ SG_ Temperature : 16|8@1- (1,0) [-128|127] "degC" Dash
+ SG_ State : 24|2@1+ (1,0) [0|3] "" Dash
+ SG_ Mode : 26|3@1- (1,0) [-4|3] "" Dash
+ SG_ Ignition : 29|1@1+ (1,0) [0|1] "" Dash
+
+BO_ 292 GatewayHeartbeat: 2 Gateway
+ SG_ Alive : 0|8@1+ (1,0) [0|255] "" Engine,Dash
+
+BO_TX_BU_ 292 : Gateway,Engine;
+
+CM_ "Fixture of canbus-interop: attributes with defaults, comments, value tables with negative values, several receivers and senders.";
+CM_ BU_ Engine "Engine control unit";
+CM_ BO_ 291 "Cyclic engine status";
+CM_ SG_ 291 Speed "Engine speed";
+CM_ SG_ 291 Mode "Signed value table";
+BA_DEF_ BO_ "GenMsgCycleTime" INT 0 65535;
+BA_DEF_ BO_ "GenMsgSendType" ENUM "Cyclic","Spontaneous","IfActive";
+BA_DEF_ SG_ "GenSigStartValue" FLOAT -1e9 1e9;
+BA_DEF_ BU_ "NodeLayerModules" STRING ;
+BA_DEF_ "DBName" STRING ;
+BA_DEF_DEF_ "GenMsgCycleTime" 0;
+BA_DEF_DEF_ "GenMsgSendType" "Cyclic";
+BA_DEF_DEF_ "GenSigStartValue" 0;
+BA_DEF_DEF_ "NodeLayerModules" "";
+BA_DEF_DEF_ "DBName" "";
+BA_ "DBName" "AttributesFixture";
+BA_ "GenMsgCycleTime" BO_ 291 100;
+BA_ "GenMsgCycleTime" BO_ 292 1000;
+BA_ "GenMsgSendType" BO_ 292 1;
+BA_ "GenSigStartValue" SG_ 291 Temperature 20;
+BA_ "NodeLayerModules" BU_ Engine "CANoeILNLVector.dll";
+VAL_ 291 State 0 "Stopped" 1 "Cranking" 2 "Running" 3 "Fault" ;
+VAL_ 291 Mode -4 "Limp" -1 "Reverse" 0 "Idle" 3 "Boost" ;
+VAL_ 291 Ignition 0 "Off" 1 "On" ;

@@ -1,0 +1,4 @@
+# mux.dbc: one message per multiplexer value
+{"message": "Muxed", "signals": {"Mux": 0, "A0": 1234, "B0": -5, "Always": 7}}
+{"message": "Muxed", "signals": {"Mux": 1, "A1": 12345.67, "Always": 8}}
+{"message": "Muxed", "signals": {"Mux": 2, "A2": 40000, "Always": 9}}

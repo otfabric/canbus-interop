@@ -1,0 +1,30 @@
+VERSION "canbus-interop fixtures 1.0"
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	BA_DEF_DEF_
+	VAL_TABLE_
+	SIG_VALTYPE_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ECU1
+
+BO_ 1280 ExtMux: 8 ECU1
+ SG_ S0 M : 0|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ S1 m0M : 4|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ S2 m0 : 8|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ S3 m1 : 8|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ S4 m2 : 16|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ S5 : 56|8@1+ (1,0) [0|255] "" Vector__XXX
+
+CM_ "Fixture of canbus-interop: extended multiplexing (SG_MUL_VAL_): S1 is multiplexed by S0 and multiplexes S2 and S4.";
+SG_MUL_VAL_ 1280 S1 S0 0-0;
+SG_MUL_VAL_ 1280 S2 S1 0-1;
+SG_MUL_VAL_ 1280 S3 S0 1-2;
+SG_MUL_VAL_ 1280 S4 S1 2-2;

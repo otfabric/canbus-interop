@@ -1,0 +1,21 @@
+# mux.dbc: multiplexer values 0, 1, 2 and 3 (3 selects no multiplexed signal)
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "00ffffffffffffff"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0055555555555555"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "00aaaaaaaaaaaaaa"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0002030405060708"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0100000000000000"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "01ffffffffffffff"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0155555555555555"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "01aaaaaaaaaaaaaa"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0102030405060708"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0200000000000000"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "02ffffffffffffff"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0255555555555555"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "02aaaaaaaaaaaaaa"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0202030405060708"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0300000000000000"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "03ffffffffffffff"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0355555555555555"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "03aaaaaaaaaaaaaa"}
+{"id": 1024, "extended": false, "fd": false, "len": 8, "data": "0302030405060708"}

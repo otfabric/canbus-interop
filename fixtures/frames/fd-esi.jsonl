@@ -1,0 +1,7 @@
+# CAN FD with the error state indicator set
+{"id":1445,"extended":false,"fd":true,"brs":false,"esi":true,"remote":false,"error":false,"len":0,"data":""}
+{"id":1445,"extended":false,"fd":true,"brs":false,"esi":true,"remote":false,"error":false,"len":8,"data":"b6c7d8e9fa0b1c2d"}
+{"id":1445,"extended":false,"fd":true,"brs":false,"esi":true,"remote":false,"error":false,"len":64,"data":"b6c7d8e9fa0b1c2d3e4f60718293a4b5c6d7e8f90a1b2c3d4e5f708192a3b4c5d6e7f8091a2b3c4d5e6f8091a2b3c4d5e6f708192a3b4c5d6e7f90a1b2c3d4e5"}
+{"id":1445,"extended":false,"fd":true,"brs":true,"esi":true,"remote":false,"error":false,"len":0,"data":""}
+{"id":1445,"extended":false,"fd":true,"brs":true,"esi":true,"remote":false,"error":false,"len":8,"data":"b6c7d8e9fa0b1c2d"}
+{"id":1445,"extended":false,"fd":true,"brs":true,"esi":true,"remote":false,"error":false,"len":64,"data":"b6c7d8e9fa0b1c2d3e4f60718293a4b5c6d7e8f90a1b2c3d4e5f708192a3b4c5d6e7f8091a2b3c4d5e6f8091a2b3c4d5e6f708192a3b4c5d6e7f90a1b2c3d4e5"}

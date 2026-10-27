@@ -1,0 +1,4 @@
+# extmux.dbc: one message per active branch
+{"message": "ExtMux", "signals": {"S0": 0, "S1": 1, "S2": 200, "S5": 1}}
+{"message": "ExtMux", "signals": {"S0": 0, "S1": 2, "S4": 77, "S5": 2}}
+{"message": "ExtMux", "signals": {"S0": 1, "S3": 65535, "S5": 3}}

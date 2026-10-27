@@ -1,0 +1,4 @@
+# float.dbc: physical values
+{"message": "Floats", "signals": {"F32": 1.5, "F32B": -2.25}}
+{"message": "Double", "signals": {"F64": 3.141592653589793}}
+{"message": "ScaledFloat", "signals": {"SF": 5}}

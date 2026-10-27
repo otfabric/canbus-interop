@@ -1,0 +1,6 @@
+# wide.dbc: extreme 64-bit values; 2^53+1 is not representable as a float64
+{"message": "Wide64U", "signals": {"U64": 18446744073709551615}}
+{"message": "Wide64U", "signals": {"U64": 9007199254740993}}
+{"message": "Wide64S", "signals": {"S64": -9223372036854775808}}
+{"message": "Wide64S", "signals": {"S64": 9223372036854775807}}
+{"message": "Mixed32", "signals": {"U32": 4294967295, "S32": -2147483648}}

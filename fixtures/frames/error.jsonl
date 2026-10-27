@@ -1,0 +1,7 @@
+# Error frames as the Linux kernel reports them (linux/can/error.h): id = error class, data = details.
+# Injected from userspace on vcan; on a real controller only the driver produces them.
+{"id":4,"extended":false,"fd":false,"brs":false,"esi":false,"remote":false,"error":true,"len":8,"data":"0004000000000000"}
+{"id":64,"extended":false,"fd":false,"brs":false,"esi":false,"remote":false,"error":true,"len":8,"data":"0000000000000000"}
+{"id":2,"extended":false,"fd":false,"brs":false,"esi":false,"remote":false,"error":true,"len":8,"data":"0500000000000000"}
+{"id":8,"extended":false,"fd":false,"brs":false,"esi":false,"remote":false,"error":true,"len":8,"data":"0002080000000000"}
+{"id":512,"extended":false,"fd":false,"brs":false,"esi":false,"remote":false,"error":true,"len":8,"data":"0000000000007f80"}
