@@ -1,0 +1,19 @@
+# fd.arxml: patterns per message; then too short and an unknown identifier
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "55555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "dd0bc1477ddbc8981c2176b833edb4229b67c66ee5eaec3f4fdbb0fc89524a95516800472236ce42ea04d1ef0067bb43d32cbeaa5f013f6d564b714ada6921a9"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "ee7bcba0dbfafd4127b8cc3b341aedfc4f6306e7d7743c0f743e5656a8c91dd277605f4fdf2d8661ca4702e08e24c320836f3ef00013f548dc3e9c816ebaf3fa"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "10bfed9639a39801ff55b20b56fb0f842d987321f7695970dda7310b61087b508720e2c280f1c507c1dc829100824ed9820ad4a75f353f16ae1c7b21bea9ffb7"}
+{"id": 512, "extended": false, "fd": true, "len": 64, "data": "ad3c441b7b86dfeac5c765ed51944e4f40d12941d6bd97981de8c0d2cdef1c93bf52faa758970a5163dc9574538482f528c3c80df2e5dbd721e647534e539ad9"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "000000000000000000000000"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "ffffffffffffffffffffffff"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "555555555555555555555555"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "aaaaaaaaaaaaaaaaaaaaaaaa"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "3f9c15a516dbda01b191ac68"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "1074eed3d3713de1197783e0"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "22a2f1bb5c8261e53daa8b68"}
+{"id": 448528384, "extended": true, "fd": true, "len": 12, "data": "457f33b561b211824f78bc9a"}
+{"id": 512, "extended": false, "fd": false, "len": 4, "data": "00010203"}
+{"id": 2046, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}

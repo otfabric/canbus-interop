@@ -1,0 +1,6 @@
+# basic.arxml: physical values
+{"message": "Engine", "signals": {"Speed": 1000, "Temp": 291, "Gear": 2, "Torque": -120.5, "Mode": 63}}
+{"message": "Engine", "signals": {"Speed": -40, "Temp": 4095, "Gear": 15, "Torque": 16383.5, "Mode": 0}}
+{"message": "Engine", "signals": {"Speed": 8151.875, "Temp": 0, "Gear": 0, "Torque": -16384, "Mode": 126.5}}
+{"message": "Body", "signals": {"Door": 2, "Level": 28, "Tilt": -128, "Count": 4294967295}}
+{"message": "Body", "signals": {"Door": 0, "Level": -100, "Tilt": 127, "Count": 305419896}}
