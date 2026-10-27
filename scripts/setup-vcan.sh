@@ -16,7 +16,10 @@ modprobe -a can can-raw vcan 2>/dev/null || {
 for ifc in "$@"; do
     ip link show "$ifc" >/dev/null 2>&1 || ip link add dev "$ifc" type vcan
     ip link set "$ifc" down
-    ip link set "$ifc" mtu 72          # CAN FD frames (CANFD_MTU)
+    # CAN FD needs an MTU of at least 72 (CANFD_MTU). Since Linux 6.2 a new
+    # vcan has the CAN XL MTU 2060, which carries FD frames too: keep it.
+    mtu=$(cat "/sys/class/net/$ifc/mtu")
+    (( mtu >= 72 )) || ip link set "$ifc" mtu 72
     ip link set "$ifc" txqueuelen 1000 # bursts without ENOBUFS
     ip link set "$ifc" up
 done
