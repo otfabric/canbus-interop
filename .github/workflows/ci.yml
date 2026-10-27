@@ -102,7 +102,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq qemu-system-x86 busybox-static >/dev/null
           pipx install virtme-ng
-          sudo ln -sf "$(command -v vng)" /usr/local/bin/vng
       - name: Build the images
         run: make -j3 --output-sync=target image-canutils image-pythoncanisotp image-pythoncan
       - name: ISO-TP suite in the microVM

@@ -25,7 +25,7 @@ ver=$(apt-cache depends linux-image-generic | sed -n 's/.*linux-image-\([0-9].*-
     && for d in *.deb; do dpkg-deb -x "$d" kernel; done)
 sudo depmod -b "$state/kernel" "$ver"
 
-sudo env ROOTFS="$ROOTFS" "$root/scripts/chroot-run" export \
+"$root/scripts/chroot-run" export \
     "ghcr.io/otfabric/canbus-interop-canutils:$version" \
     "ghcr.io/otfabric/canbus-interop-pythoncanisotp:$version" \
     "ghcr.io/otfabric/canbus-interop-pythoncan:$version"
@@ -43,6 +43,6 @@ env ROOTFS="$ROOTFS" DOCKER="$root/scripts/chroot-run" ADMIN="" \
     WORK="$state/work" python3 scripts/selftest.py --reports "$reports"
 GUEST
 start=$(date +%s)
-sudo vng --run "$state/kernel/boot/vmlinuz-$ver" --root / --user root --memory 2G --cpus 2 \
+vng --run "$state/kernel/boot/vmlinuz-$ver" --root / --user root --memory 2G --cpus 2 \
     --rwdir "$state" --rwdir "$reports" --exec "bash $state/guest.sh"
 echo "microVM with Linux $ver: $(( $(date +%s) - start )) s"

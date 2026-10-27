@@ -63,7 +63,22 @@ All four use the kernel's `CAN_RAW`; see [the README](../README.md#what-independ
 | `dbcFloat`: `SIG_VALTYPE_` | ✓ | ✓ | `decode-float`, `encode-float` |
 | `encodeRaw` | ✓ | ✓ | – |
 | KCD | – | ✓ (read, convert) | `kcd-convert-basic`, `decode-kcd-basic` |
+| `arxml`: AUTOSAR 4 ARXML (1.1) | ✓ | ✓ (also convert to DBC) | `decode-arxml-*`, `encode-arxml-*`, `decode-arxml-dbc-*`; PDU offsets not applied by either ⁷ |
 
 6. canmatrix 1.3.3 `Frame.encode` raises `EncodingComplexMultiplexed`.
    Known behavioural differences between the two are listed in
    [tests/known-differences.tsv](../tests/known-differences.tsv).
+7. Neither applies the `START-POSITION` of a `PDU-TO-FRAME-MAPPING`
+   (scenario `arxml-pdu-offset`, reported as `known`); see
+   [FIXTURES.md](FIXTURES.md#arxml-fixturesarxml).
+
+## Log formats (pythoncan `log-convert`, 1.1)
+
+| Feature | pythoncan | Verified by |
+|---------|:-:|---|
+| `logAsc`: Vector ASC read and write | ✓ (lossy) | `read-asc`, `round-trip-asc` |
+| `logBlf`: Vector BLF read and write | ✓ (lossless) | `read-blf`, `round-trip-blf` |
+| `logTrc`: PEAK TRC read, write as 2.1 | ✓ (classical data frames only) | `read-trc`, `round-trip-trc` |
+| `logCsv`: python-can CSV | ✓ (no CAN FD) | `round-trip-csv` (`known`) |
+
+What each format keeps, frame kind by frame kind: [LOG_FORMATS.md](LOG_FORMATS.md).

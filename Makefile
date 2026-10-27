@@ -3,7 +3,7 @@
 # Run 'make' or 'make help' to list targets.
 #
 # Pre-push gate (Linux with the CAN modules):  make ci
-# Without CAN (macOS, Docker Desktop):          make validate lint images smoke selftest-dbc
+# Without CAN (macOS, Docker Desktop):          make validate lint images smoke selftest-dbc selftest-logs
 
 .DEFAULT_GOAL := help
 
@@ -41,7 +41,7 @@ IMAGE_TEMPLATE = $(REGISTRY)/canbus-interop-{adapter}:$(VERSION)
 
 export REGISTRY VERSION
 
-.PHONY: help ci validate lint images smoke selftest selftest-raw selftest-isotp selftest-dbc documents vcan \
+.PHONY: help ci validate lint images smoke selftest selftest-raw selftest-isotp selftest-dbc selftest-logs documents vcan \
 	print-adapters print-published-adapters capabilities buildx-setup buildx publish publish-arch publish-manifest \
 	digests release-notes clean FORCE
 FORCE:
@@ -106,7 +106,7 @@ selftest: ## Reference-to-reference self-test of all suites on vcan (Linux; make
 	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" VCAN=$(VCAN) VCAN2=$(VCAN2) ADMIN="$(ADMIN)" \
 		python3 scripts/selftest.py --reports reports
 
-selftest-%: FORCE ## One suite of the self-test: selftest-raw, selftest-isotp, selftest-dbc (dbc needs no CAN)
+selftest-%: FORCE ## One suite of the self-test: selftest-raw, selftest-isotp, selftest-dbc, selftest-logs (dbc and logs need no CAN)
 	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" SUITES=$* VCAN=$(VCAN) VCAN2=$(VCAN2) ADMIN="$(ADMIN)" \
 		python3 scripts/selftest.py --reports reports
 
