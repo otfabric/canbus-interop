@@ -52,12 +52,8 @@ jobs:
           python-version: "3.12"
       - run: pip install jsonschema
 
-      # The runner kernels ship vcan and can-isotp in linux-modules-extra.
       - name: Load the CAN modules and create vcan0, vcan1
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q "linux-modules-extra-$(uname -r)"
-          make vcan ADMIN=sudo
+        run: scripts/ci-can-modules.sh && make vcan ADMIN=sudo
 
       - name: Build the images
         run: make -j4 --output-sync=target images

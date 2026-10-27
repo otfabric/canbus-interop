@@ -47,10 +47,7 @@ jobs:
           scripts/release-notes.sh "${VERSION}" > /dev/null
 
       - name: Load the CAN modules and create vcan0, vcan1
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q "linux-modules-extra-$(uname -r)"
-          make vcan ADMIN=sudo
+        run: scripts/ci-can-modules.sh && make vcan ADMIN=sudo
 
       - name: Build for linux/${{ matrix.arch }} and self-test
         run: |
