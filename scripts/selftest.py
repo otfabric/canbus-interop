@@ -740,30 +740,36 @@ def suite_isotp_injected(caps, raw, receivers):
         return {"id": 0x7E0, "len": len(b), "data": b.hex()}
 
     ff = fr("1014" + data[:6].hex())
+    # A negative case ends with a valid single frame: the receiver must
+    # deliver exactly that one message. It proves the bad frames reached the
+    # receiver (and were dropped) instead of arriving after its timeout.
+    probe = fr("01AA")
     cases = [
-        ("injected-valid", [ff, fr("21" + data[6:13].hex()), fr("22" + data[13:20].hex())], True),
-        ("injected-wrong-sn", [ff, fr("22" + data[6:13].hex()), fr("23" + data[13:20].hex())], False),
-        ("injected-cf-without-ff", [fr("21" + data[6:13].hex())], False),
-        ("injected-sf-len-0", [fr("00")], False),
+        ("injected-valid", [ff, fr("21" + data[6:13].hex()), fr("22" + data[13:20].hex())], data),
+        ("injected-wrong-sn", [ff, fr("22" + data[6:13].hex()), fr("23" + data[13:20].hex()), probe], b"\xaa"),
+        ("injected-cf-without-ff", [fr("21" + data[6:13].hex()), probe], b"\xaa"),
+        ("injected-sf-len-0", [fr("00"), probe], b"\xaa"),
     ]
     for r in receivers:
-        for name, frames, deliver in cases:
+        for name, frames, want in cases:
+            # Generous timeout: a slow host (a microVM) can take seconds to
+            # start the injecting container.
             rx = Background(r, ["isotp-receive", "--interface", VCAN, "--tx-id", "7E8", "--rx-id", "7E0",
-                                "--count", "1", "--timeout-ms", "4000"])
+                                "--count", "1", "--timeout-ms", "30000"])
             if not rx.wait_ready():
                 rx.finish(5)
                 record("isotp", name, "fail", "receiver not ready", raw, r)
                 continue
             path = write_work("inject-%s.jsonl" % name, frames)
             run(raw, ["send", "--interface", VCAN, "--gap-us", "20000", "--frames", path])
-            code = rx.finish(20)
+            code = rx.finish(40)
             msgs = rx.messages()
-            if deliver:
-                ok = code == 0 and len(msgs) == 1 and msgs[0]["data"] == data.hex()
+            ok = code == 0 and len(msgs) == 1 and msgs[0]["data"] == want.hex()
+            if want == data:
                 detail = "message delivered" if ok else "exit %d, %d messages" % (code, len(msgs))
             else:
-                ok = code == 3 and not msgs
-                detail = "nothing delivered" if ok else "exit %d, messages %s" % (code, msgs)
+                detail = ("bad frames dropped, the following single frame delivered" if ok else
+                          "exit %d, messages %s" % (code, [m.get("data") for m in msgs]))
             record("isotp", name, "pass" if ok else "fail", detail, raw, r)
 
 
