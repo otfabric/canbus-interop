@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """canbus-interop adapter for Scapy's native CAN socket (scapy.contrib.cansocket_native)."""
 
+import argparse
 import os
 import select
 import time
@@ -112,23 +113,33 @@ def receive_one(sock, deadline):
 def op_send(args, caps):
     frames = cbi.read_frames(args.frames)
     cbi.check_send_frames(frames, args, caps)
-    sock = open_socket(args, recv_own=args.recv_own)
+    # NativeCANSocket(fd=True) pads every packet to the CAN FD MTU, so the
+    # kernel would send classical, remote and error frames as FD frames.
+    # Classical frames go through a classical socket, FD frames through an
+    # FD socket; writes are synchronous, so the order is kept.
+    classic = open_socket(argparse.Namespace(interface=args.interface, fd=False), recv_own=args.recv_own)
+    fdsock = open_socket(args, recv_own=args.recv_own) if args.fd else None
     echoed = 0
     try:
         for fr in frames:
-            sock.send(to_packet(fr))
+            (fdsock if fr.fd else classic).send(to_packet(fr))
             if args.gap_us:
                 time.sleep(args.gap_us / 1e6)
         if args.recv_own:
             deadline = cbi.Deadline(args.timeout_ms)
-            while echoed < len(frames):
-                pkt = receive_one(sock, deadline)
-                if pkt is None:
+            socks = [x for x in (classic, fdsock) if x is not None]
+            while echoed < len(frames) and not deadline.expired():
+                r, _, _ = select.select([x.ins for x in socks], [], [], deadline.remaining())
+                if not r:
                     break
-                cbi.frame_event(from_packet(pkt, args.interface))
-                echoed += 1
+                for x in socks:
+                    if x.ins in r:
+                        cbi.frame_event(from_packet(x.recv(), args.interface))
+                        echoed += 1
     finally:
-        sock.close()
+        classic.close()
+        if fdsock is not None:
+            fdsock.close()
     if args.recv_own:
         cbi.emit(cbi.result("send", sent=len(frames), echoed=echoed))
         if echoed < len(frames):

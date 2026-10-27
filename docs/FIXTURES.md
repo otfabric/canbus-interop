@@ -17,6 +17,7 @@ lines are comments.
 | `remote.jsonl` | 8 | Remote frames with requested lengths 0, 1, 4, 8, 11- and 29-bit |
 | `fd.jsonl` | 64 | CAN FD, every legal length (0–8, 12, 16, 20, 24, 32, 48, 64), with and without BRS, 11- and 29-bit |
 | `fd-esi.jsonl` | 6 | CAN FD with ESI set |
+| `mixed.jsonl` | 42 | Classical, remote and FD frames interleaved, sent with `--fd`: classical frames must stay classical |
 | `error.jsonl` | 5 | Error frames (classes controller, bus-off, lost arbitration, protocol violation, error counters) |
 | `burst.jsonl` | 2000 | Classical frames; bytes 0–3 a big-endian sequence number for order and loss checks |
 

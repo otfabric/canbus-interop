@@ -242,6 +242,7 @@ RAW_FIXTURES = {
     "remote": (["remote"], ["remote"], False),
     "fd": (["fd", "brs"], ["fd"], True),
     "fd-esi": (["fd", "esi"], ["fd"], True),
+    "mixed": (["fd", "remote"], ["fd", "remote"], True),
     "burst": ([], [], False),
 }
 
