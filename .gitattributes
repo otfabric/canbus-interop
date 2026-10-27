@@ -1,2 +1,4 @@
 * text=auto eol=lf
 *.tar.gz binary
+# Log fixtures are kept byte for byte as python-can wrote them (TRC uses CRLF).
+fixtures/logs/frames.* -text
