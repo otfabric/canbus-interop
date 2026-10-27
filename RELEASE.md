@@ -8,7 +8,7 @@ the multi-arch `<image>:vX.Y.Z` and publishes the release with the digests.
 
 ## v0.1.0
 
-**Date:** unreleased
+**Date:** 2026-10-27
 **Previous release:** none
 
 First release of canbus-interop.
