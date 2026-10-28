@@ -138,6 +138,8 @@ read: Ne |
 | dbc | decode-arxml-fd | cantools → canmatrix | ✅ | 144 values agree |
 | dbc | encode-arxml-fd | cantools → canmatrix | ✅ | 3 messages agree |
 | dbc | decode-arxml-dbc-fd | cantools → canmatrix | ✅ | 144 values agree |
+| dbc | arxml-multiplexed-cantools | cantools | ✅ | 3 probe frames decode as AUTOSAR defines |
+| dbc | arxml-multiplexed-canmatrix | canmatrix | ⚠️ | not an oracle for multiplexed.arxml: reads only the selector (docs/FIXTURES.md) |
 | dbc | decode-arxml-pdu-offset | cantools → canmatrix | ✅ | 48 values agree |
 | dbc | encode-arxml-pdu-offset | cantools → canmatrix | ✅ | 1 messages agree |
 | dbc | decode-arxml-dbc-pdu-offset | cantools → canmatrix | ✅ | 48 values agree |

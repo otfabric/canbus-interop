@@ -121,7 +121,7 @@ def triggering(name, frame, ident, mode, fd=False):
                 </CAN-FRAME-TRIGGERING>"""
 
 
-def frame(name, length, pdu, pos=0):
+def frame(name, length, pdu, pos=0, dest="I-SIGNAL-I-PDU"):
     return f"""        <CAN-FRAME>
           <SHORT-NAME>{name}</SHORT-NAME>
           <FRAME-LENGTH>{length}</FRAME-LENGTH>
@@ -129,7 +129,7 @@ def frame(name, length, pdu, pos=0):
             <PDU-TO-FRAME-MAPPING>
               <SHORT-NAME>{pdu}Mapping</SHORT-NAME>
               <PACKING-BYTE-ORDER>MOST-SIGNIFICANT-BYTE-LAST</PACKING-BYTE-ORDER>
-              <PDU-REF DEST="I-SIGNAL-I-PDU">/Pdus/{pdu}</PDU-REF>
+              <PDU-REF DEST="{dest}">/Pdus/{pdu}</PDU-REF>
               <START-POSITION>{pos}</START-POSITION>
             </PDU-TO-FRAME-MAPPING>
           </PDU-TO-FRAME-MAPPINGS>
@@ -144,6 +144,38 @@ def pdu(name, length, mappings):
 {chr(10).join(mappings)}
           </I-SIGNAL-TO-PDU-MAPPINGS>
         </I-SIGNAL-I-PDU>"""
+
+
+def mux_pdu(name, length, sel_order, sel_pos, sel_len, alternatives, static=None, initial=None):
+    """A MULTIPLEXED-I-PDU: alternatives maps selector codes to I-SIGNAL-I-PDUs
+    (each also maps the selector field, as cantools requires); static names
+    the I-SIGNAL-I-PDU of the static part."""
+    alts = "\n".join(f"""              <DYNAMIC-PART-ALTERNATIVE>
+                <I-PDU-REF DEST="I-SIGNAL-I-PDU">/Pdus/{p}</I-PDU-REF>
+                <INITIAL-DYNAMIC-PART>{"true" if code == initial else "false"}</INITIAL-DYNAMIC-PART>
+                <SELECTOR-FIELD-CODE>{code}</SELECTOR-FIELD-CODE>
+              </DYNAMIC-PART-ALTERNATIVE>""" for code, p in alternatives)
+    st = f"""
+          <STATIC-PARTS>
+            <STATIC-PART>
+              <I-PDU-REF DEST="I-SIGNAL-I-PDU">/Pdus/{static}</I-PDU-REF>
+            </STATIC-PART>
+          </STATIC-PARTS>""" if static else ""
+    return f"""        <MULTIPLEXED-I-PDU>
+          <SHORT-NAME>{name}</SHORT-NAME>
+          <LENGTH>{length}</LENGTH>
+          <DYNAMIC-PARTS>
+            <DYNAMIC-PART>
+              <DYNAMIC-PART-ALTERNATIVES>
+{alts}
+              </DYNAMIC-PART-ALTERNATIVES>
+            </DYNAMIC-PART>
+          </DYNAMIC-PARTS>
+          <SELECTOR-FIELD-BYTE-ORDER>{sel_order}</SELECTOR-FIELD-BYTE-ORDER>
+          <SELECTOR-FIELD-LENGTH>{sel_len}</SELECTOR-FIELD-LENGTH>
+          <SELECTOR-FIELD-START-POSITION>{sel_pos}</SELECTOR-FIELD-START-POSITION>{st}
+          <UNUSED-BIT-PATTERN>0</UNUSED-BIT-PATTERN>
+        </MULTIPLEXED-I-PDU>"""
 
 
 def package(name, elements):
@@ -256,6 +288,39 @@ FIXTURES = {
         system=[syssig("A"), syssig("B")],
         compu=[],
         messages=[{"message": "Shifted", "signals": {"A": 17, "B": 4660}}]),
+    "multiplexed": dict(
+        comment="MULTIPLEXED-I-PDUs: a 4-bit Intel selector with a static part and three alternatives, an 8-bit "
+                "Motorola selector with two alternatives; every alternative maps the selector field too",
+        cluster="Mux",
+        triggerings=[triggering("MuxTriggering", "MuxFrame", 0x310, "STANDARD"),
+                     triggering("BeMuxTriggering", "BeMuxFrame", 0x311, "STANDARD")],
+        frames=[frame("MuxFrame", 8, "MuxPdu", dest="MULTIPLEXED-I-PDU"),
+                frame("BeMuxFrame", 8, "BeMuxPdu", dest="MULTIPLEXED-I-PDU")],
+        pdus=[mux_pdu("MuxPdu", 8, LE, 0, 4, [(0, "Alt0Pdu"), (1, "Alt1Pdu"), (2, "Alt2Pdu")], static="StaticPdu", initial=0),
+              mux_pdu("BeMuxPdu", 8, BE, 7, 8, [(5, "Alt5Pdu"), (10, "Alt10Pdu")], initial=10),
+              pdu("StaticPdu", 8, [sig_mapping("CounterMapping", "Counter", LE, 56)]),
+              pdu("Alt0Pdu", 8, [sig_mapping("Sel0Mapping", "Sel", LE, 0), sig_mapping("TempMapping", "Temp", LE, 8),
+                                 sig_mapping("FlagMapping", "Flag", LE, 16)]),
+              pdu("Alt1Pdu", 8, [sig_mapping("Sel1Mapping", "Sel", LE, 0), sig_mapping("PressureMapping", "Pressure", BE, 15),
+                                 sig_mapping("ModeMapping", "Mode", LE, 24)]),
+              pdu("Alt2Pdu", 8, [sig_mapping("Sel2Mapping", "Sel", LE, 0), sig_mapping("RawMapping", "Raw", LE, 8)]),
+              pdu("Alt5Pdu", 8, [sig_mapping("SelB5Mapping", "SelB", BE, 7), sig_mapping("XMapping", "X", LE, 8)]),
+              pdu("Alt10Pdu", 8, [sig_mapping("SelB10Mapping", "SelB", BE, 7), sig_mapping("YMapping", "Y", BE, 23)])],
+        signals=[isignal("Sel", 4), isignal("SelB", 8), isignal("Counter", 8), isignal("Temp", 8), isignal("Flag", 1),
+                 isignal("Pressure", 16), isignal("Mode", 3), isignal("Raw", 32, base="sint32"), isignal("X", 16),
+                 isignal("Y", 12)],
+        system=[syssig("Sel"), syssig("SelB"), syssig("Counter"), syssig("Temp", "TempCm"), syssig("Flag"),
+                syssig("Pressure", "PressureCm"), syssig("Mode", "ModeCm"), syssig("Raw"), syssig("X"), syssig("Y", "YCm")],
+        compu=[linear("TempCm", -40, 0.5), linear("PressureCm", 0, 0.1),
+               texttable("ModeCm", [(0, "Off"), (1, "Eco"), (2, "Normal"), (3, "Sport")]), linear("YCm", 0, 0.1)],
+        selectors={"MuxFrame": (0, 4, LE, [0, 1, 2]), "BeMuxFrame": (7, 8, BE, [5, 10])},
+        messages=[
+            {"message": "MuxFrame", "signals": {"MuxFrame_selector1": 0, "Counter": 200, "Temp": 25.5, "Flag": 1}},
+            {"message": "MuxFrame", "signals": {"MuxFrame_selector1": 1, "Counter": 1, "Pressure": 1013.2, "Mode": 3}},
+            {"message": "MuxFrame", "signals": {"MuxFrame_selector1": 2, "Counter": 0, "Raw": -123456}},
+            {"message": "BeMuxFrame", "signals": {"BeMuxFrame_selector1": 5, "X": 4660}},
+            {"message": "BeMuxFrame", "signals": {"BeMuxFrame_selector1": 10, "Y": 409.5}},
+        ]),
 }
 
 
@@ -277,6 +342,24 @@ def frame_vectors(name, fx):
         for _ in range(4):
             lines.append(json.dumps({"id": ident, "extended": ext, "fd": fd, "len": length,
                                      "data": bytes(rnd.randrange(256) for _ in range(length)).hex()}))
+    # Multiplexed frames: random payloads with every selector code, and an
+    # undescribed one.
+    for (ident, ext, fd, length), t in zip(ids, fx["triggerings"]):
+        fname = t.split("/Frames/")[1].split("<")[0]
+        if fname not in fx.get("selectors", {}):
+            continue
+        pos, size, order, codes = fx["selectors"][fname]
+        for code in codes + [max(codes) + 1]:
+            for _ in range(2):
+                data = bytearray(rnd.randrange(256) for _ in range(length))
+                if order == LE:  # bits pos..pos+size-1, LSB first
+                    for i in range(size):
+                        b = pos + i
+                        data[b // 8] = data[b // 8] & ~(1 << (b % 8)) | ((code >> i) & 1) << (b % 8)
+                else:  # pos is the MSB; this generator only uses byte-aligned big-endian selectors
+                    assert size == 8 and pos % 8 == 7
+                    data[pos // 8] = code
+                lines.append(json.dumps({"id": ident, "extended": ext, "fd": fd, "len": length, "data": bytes(data).hex()}))
     ident, ext, fd, length = ids[0]
     lines.append(json.dumps({"id": ident, "extended": ext, "fd": False, "len": 4, "data": "00010203"}))
     lines.append(json.dumps({"id": 0x7FE, "extended": False, "fd": False, "len": 8, "data": "0000000000000000"}))

@@ -2,6 +2,13 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.4.0
+
+ARXML fixture `multiplexed.arxml` (MULTIPLEXED-I-PDUs with static and
+dynamic parts, Intel and Motorola selectors) with decode and encode
+vectors; the self-test checks cantools against hand-worked probe frames
+(canmatrix 1.3.3 cannot read multiplexed PDUs). Contract 1.2 unchanged.
+
 ## v0.3.0
 
 Contract 1.2: slcan interfaces for pythoncan (`send`/`receive` with

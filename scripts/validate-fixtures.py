@@ -85,16 +85,28 @@ def main():
                     if s not in messages[d["message"]]:
                         errors.append("%s:%d: no signal %s in %s" % (path, n, s, d["message"]))
     # ARXML: messages are CAN-FRAME short names, signals I-SIGNAL short names
-    # mapped into the frame's PDU (the fixtures map one PDU per frame).
+    # mapped into the frame's PDU (the fixtures map one PDU per frame). A
+    # MULTIPLEXED-I-PDU contributes the signals of its static and dynamic
+    # parts (the selector field's own I-SIGNAL excepted) and a selector named
+    # <frame>_selector1, as cantools names it.
     for path in sorted(glob.glob(os.path.join(ROOT, "fixtures", "arxml", "*.messages.jsonl"))):
         xml = open(path.replace(".messages.jsonl", ".arxml")).read()
         pdu_signals = {}
         for m in re.finditer(r"<I-SIGNAL-I-PDU>\s*<SHORT-NAME>(\w+)</SHORT-NAME>(.*?)</I-SIGNAL-I-PDU>", xml, re.S):
             pdu_signals[m.group(1)] = set(re.findall(r"/Signals/(\w+)</I-SIGNAL-REF>", m.group(2)))
+        mux = {}
+        for m in re.finditer(r"<MULTIPLEXED-I-PDU>\s*<SHORT-NAME>(\w+)</SHORT-NAME>(.*?)</MULTIPLEXED-I-PDU>", xml, re.S):
+            mux[m.group(1)] = re.findall(r"/Pdus/(\w+)</I-PDU-REF>", m.group(2))
         messages = {}
         for m in re.finditer(r"<CAN-FRAME>\s*<SHORT-NAME>(\w+)</SHORT-NAME>(.*?)</CAN-FRAME>", xml, re.S):
-            pdus = re.findall(r"/Pdus/(\w+)</PDU-REF>", m.group(2))
-            messages[m.group(1)] = set().union(*(pdu_signals.get(p, set()) for p in pdus))
+            sigs = set()
+            for p in re.findall(r"/Pdus/(\w+)</PDU-REF>", m.group(2)):
+                if p in mux:
+                    sigs.add(m.group(1) + "_selector1")
+                    sigs |= set().union(*(pdu_signals.get(q, set()) for q in mux[p]))
+                else:
+                    sigs |= pdu_signals.get(p, set())
+            messages[m.group(1)] = sigs
         for n, d in lines(path):
             count += 1
             if ev:

@@ -827,6 +827,53 @@ def suite_dbc(caps):
     suite_arxml(caps, oracles, known)
 
 
+# Fixtures only one oracle reads: the self-test checks each oracle against
+# values worked out by hand from AUTOSAR instead of comparing the two. The
+# oracles in ARXML_ORACLES must match (else the scenario fails); the others
+# are recorded as known. multiplexed.arxml: canmatrix 1.3.3 reads only the
+# selector of a MULTIPLEXED-I-PDU (named "Multiplexor", signed) and none of
+# its signals.
+ARXML_ORACLES = {"multiplexed": {"cantools"}}
+ARXML_PROBES = {
+    "multiplexed": [
+        # selector 1 → Alt1Pdu: Pressure (Motorola, start 15) 0x2794, Mode 3, static Counter 0xC8
+        ({"id": 0x310, "extended": False, "fd": False, "len": 8, "data": "01279403000000c8"},
+         "MuxFrame", {"MuxFrame_selector1": ("1", None), "Pressure": ("10132", None), "Mode": ("3", "Sport"),
+                      "Counter": ("200", None)}),
+        # selector 0 → Alt0Pdu: Temp 0x5A, Flag 1
+        ({"id": 0x310, "extended": False, "fd": False, "len": 8, "data": "f05a010000000007"},
+         "MuxFrame", {"MuxFrame_selector1": ("0", None), "Temp": ("90", None), "Flag": ("1", None),
+                      "Counter": ("7", None)}),
+        # Motorola selector 10 (byte 0) → Alt10Pdu: Y (Motorola, start 23, 12 bits) 0xFFF
+        ({"id": 0x311, "extended": False, "fd": False, "len": 8, "data": "0a00fff000000000"},
+         "BeMuxFrame", {"BeMuxFrame_selector1": ("10", None), "Y": ("4095", None)}),
+    ],
+}
+
+
+def probe_arxml(base, oracles):
+    """Decode each probe frame with every oracle and compare with the
+    expected raw values and labels."""
+    frames = write_work("arxml-%s-probe.jsonl" % base, [p[0] for p in ARXML_PROBES[base]])
+    for o in oracles:
+        code, docs, err = run(o, ["decode", "--db", "/fixtures/arxml/%s.arxml" % base, "--frames", frames])
+        dec = [d for d in docs if d.get("type") in ("decoded", "decode-error")]
+        diffs = []
+        if code != 0 or len(dec) != len(ARXML_PROBES[base]):
+            diffs.append("exit %d, %d results: %s" % (code, len(dec), err[-150:]))
+        for d, (_, msg, want) in zip(dec, ARXML_PROBES[base]):
+            if d.get("type") != "decoded" or d.get("message") != msg:
+                diffs.append("%s: %s" % (msg, d.get("error") or d.get("message")))
+                continue
+            got = {k: (v.get("raw"), v.get("label")) for k, v in d.get("signals", {}).items()}
+            if got != want:
+                diffs.append("%s: %s, want %s" % (msg, sorted(got.items()), sorted(want.items())))
+        status = "pass" if not diffs else ("fail" if o in ARXML_ORACLES[base] else "known")
+        record("dbc", "arxml-%s-%s" % (base, o), status,
+               "%d probe frames decode as AUTOSAR defines" % len(ARXML_PROBES[base]) if not diffs else
+               "not an oracle for %s.arxml (docs/FIXTURES.md): %s" % (base, "; ".join(diffs)[:300]), o, "")
+
+
 def suite_arxml(caps, oracles, known):
     """Both oracles read the ARXML fixtures directly (decode and encode
     vectors must agree); canmatrix converts them to DBC and cantools decodes
@@ -842,6 +889,9 @@ def suite_arxml(caps, oracles, known):
             continue
         base = name[:-6]
         db = "/fixtures/arxml/" + name
+        if base in ARXML_PROBES:
+            probe_arxml(base, oracles)
+            continue
         outs = {o: run(o, ["decode", "--db", db, "--frames", "/fixtures/arxml/%s.frames.jsonl" % base]) for o in oracles}
         compare_decoded("arxml-" + base, outs, a, b, known)
         outs = {o: run(o, ["encode", "--db", db, "--messages", "/fixtures/arxml/%s.messages.jsonl" % base]) for o in oracles}
