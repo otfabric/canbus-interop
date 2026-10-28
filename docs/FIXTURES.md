@@ -56,6 +56,7 @@ decodes them with cantools after canmatrix converts them to DBC.
 | `basic.arxml` | `CAN-CLUSTER` / `CAN-FRAME-TRIGGERING` with `STANDARD` and `EXTENDED` addressing, `CAN-FRAME`, `PDU-TO-FRAME-MAPPING`, `I-SIGNAL-I-PDU`, `I-SIGNAL-TO-I-PDU-MAPPING` with `MOST-SIGNIFICANT-BYTE-LAST` (Intel) and `-FIRST` (Motorola, including a 32-bit one), `I-SIGNAL` → `SYSTEM-SIGNAL` → `COMPU-METHOD` of categories `LINEAR`, `TEXTTABLE`, `SCALE_LINEAR_AND_TEXTTABLE` and `IDENTICAL`, signed signals through `SW-BASE-TYPE` with `BASE-TYPE-ENCODING` `2C`, `INIT-VALUE`, a `UNIT` |
 | `fd.arxml` | CAN FD frames (`CAN-FRAME-RX-BEHAVIOR`/`CAN-FRAME-TX-BEHAVIOR` `CAN-FD`) of 64 bytes (standard) and 12 bytes (extended), signals at the end of the payload, a signed 32-bit signal |
 | `pdu-offset.arxml` | A PDU mapped at byte 2 of its frame (`PDU-TO-FRAME-MAPPING` `START-POSITION` 16) |
+| `multiplexed.arxml` | `MULTIPLEXED-I-PDU`s: a 4-bit Intel selector (`SELECTOR-FIELD-START-POSITION` 0) with a `STATIC-PART` and three `DYNAMIC-PART-ALTERNATIVE`s (one `INITIAL-DYNAMIC-PART`), an 8-bit Motorola selector at 7 with two; every alternative also maps the selector field (cantools requires it). Vectors cover each selector code and an undescribed one |
 
 What both oracles (cantools 45.1.1, canmatrix 1.3.3) read the same way:
 
@@ -84,8 +85,17 @@ Where they fall short, so a consumer cannot use them as oracles:
   no limits on linear scales.
 * **ECUs.** Neither reads senders and receivers from these minimal files
   (they need `ECU-INSTANCE` with frame ports and connectors); not covered.
-* **Multiplexed PDUs** (`MULTIPLEXED-I-PDU`) and secured PDUs are not
-  covered by the fixtures.
+* **Multiplexed PDUs.** cantools reads a `MULTIPLEXED-I-PDU` as a message
+  with a multiplexer signal `<frame>_selector1` (at the selector field) and
+  the signals of each dynamic alternative multiplexed by its
+  `SELECTOR-FIELD-CODE`, the alternative's own mapping of the selector field
+  dropped; the static part's signals are always present. canmatrix 1.3.3
+  reads only the selector (named `Multiplexor`, signed) and none of the
+  signals. The self-test therefore checks each oracle against probe frames
+  worked out by hand (`ARXML_PROBES` in scripts/selftest.py): cantools must
+  match (`arxml-multiplexed-cantools`), canmatrix is recorded as known; the
+  `.messages.jsonl` vectors use cantools' selector names.
+* Secured and container PDUs are not covered by the fixtures.
 
 ## Logs (`fixtures/logs/`)
 

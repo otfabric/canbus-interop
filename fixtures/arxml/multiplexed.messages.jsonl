@@ -1,0 +1,6 @@
+# multiplexed.arxml: physical values
+{"message": "MuxFrame", "signals": {"MuxFrame_selector1": 0, "Counter": 200, "Temp": 25.5, "Flag": 1}}
+{"message": "MuxFrame", "signals": {"MuxFrame_selector1": 1, "Counter": 1, "Pressure": 1013.2, "Mode": 3}}
+{"message": "MuxFrame", "signals": {"MuxFrame_selector1": 2, "Counter": 0, "Raw": -123456}}
+{"message": "BeMuxFrame", "signals": {"BeMuxFrame_selector1": 5, "X": 4660}}
+{"message": "BeMuxFrame", "signals": {"BeMuxFrame_selector1": 10, "Y": 409.5}}
