@@ -82,3 +82,9 @@ All four use the kernel's `CAN_RAW`; see [the README](../README.md#what-independ
 | `logCsv`: python-can CSV | ✓ (no CAN FD) | `round-trip-csv` (`known`) |
 
 What each format keeps, frame kind by frame kind: [LOG_FORMATS.md](LOG_FORMATS.md).
+
+## slcan (pythoncan, 1.2)
+
+| Feature | pythoncan | Verified by |
+|---------|:-:|---|
+| `slcan`: `send`/`receive` on `--interface slcan:<pyserial URL>` | ✓ (python-can 4.6.1, pyserial 3.5) | suite `slcan`: standard, extended, remote, CAN FD and the 2000-frame burst between two python-can slcan clients through a TCP relay; ESI and error frames refused as `unsupported` |

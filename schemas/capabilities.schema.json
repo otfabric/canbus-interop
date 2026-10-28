@@ -119,6 +119,10 @@
         "logCsv": {
           "type": "boolean",
           "description": "log-convert reads and writes python-can CSV (contract 1.1)"
+        },
+        "slcan": {
+          "type": "boolean",
+          "description": "send and receive accept --interface slcan:<pyserial URL> (contract 1.2)"
         }
       }
     }

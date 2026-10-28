@@ -1,6 +1,6 @@
 # Container contract
 
-Version: **1.1** (`contract_version` in [versions.yaml](../versions.yaml))
+Version: **1.2** (`contract_version` in [versions.yaml](../versions.yaml))
 
 Every adapter image exposes the same commands, flags, JSON documents and exit
 codes. Consumers (go-canbus's `interop/` suite, this repository's self-test)
@@ -13,6 +13,7 @@ compatible line and changes only with the major version.
 |---------|--------|
 | 1.0 | First release (canbus-interop v0.1.0) |
 | 1.1 | [`log-convert`](#log-convert-pythoncan) (pythoncan): Vector ASC, Vector BLF, PEAK TRC, CSV and candump logs through python-can's readers and writers, `.jsonl` frame documents; capabilities `logAsc`, `logBlf`, `logTrc`, `logCsv`; result field `frames`. [ARXML](#arxml) databases for `decode`, `encode` (cantools, canmatrix) and `convert` (canmatrix); capability `arxml`. Fixtures `fixtures/logs/` and `fixtures/arxml/`. Additions only (canbus-interop v0.2.0) |
+| 1.2 | [slcan interfaces](#slcan-interfaces-pythoncan): `send` and `receive` with `--interface slcan:<pyserial URL>` (pythoncan, python-can's slcan interface over pyserial 3.5); capability `slcan`. Additions only (canbus-interop v0.3.0) |
 
 ## Image layout
 
@@ -50,7 +51,7 @@ and an error document with code `unsupported`.
 
 | Flag | Meaning |
 |------|---------|
-| `--interface <name>` | CAN interface (default `vcan0`) |
+| `--interface <name>` | CAN interface (default `vcan0`); (1.2) `slcan:<pyserial URL>` for a serial-line CAN peer, see [slcan interfaces](#slcan-interfaces-pythoncan) |
 | `--fd` | Open the socket in CAN FD mode (required to send or receive FD frames) |
 | `--timeout-ms <n>` | Overall time limit of the operation (default 5000) |
 | `--count <n>` | Stop after n frames/messages (receive, isotp-receive; default 1) |
@@ -146,6 +147,22 @@ lossless both ways). Result
 directory. What each format keeps is measured in
 [LOG_FORMATS.md](LOG_FORMATS.md): only BLF and `.jsonl` are lossless.
 
+### slcan interfaces (pythoncan)
+
+(1.2) With feature `slcan`, `send` and `receive` take `--interface
+slcan:<url>`: python-can's slcan interface (LAWICEL ASCII, the protocol of
+serial CAN adapters such as the CANable) over a
+[pyserial URL](https://pyserial.readthedocs.io/en/latest/url_handlers.html),
+for example `slcan:socket://127.0.0.1:20000` (a TCP server on the host;
+containers run with `--network host`) or `slcan:/dev/ttyACM0` (a device the
+container is given). No CAN interface is checked. On opening, python-can
+sends `C`, `S6` (500 kbit/s), an empty record and `O`; on closing `C`. CAN FD
+frames go as `d`/`D`/`b`/`B` records. slcan carries no error state
+indicator, error frames, echoes or filters: `send` of frames with `esi` or
+`error`, and `--recv-own`, `--no-loopback`, `--filter` and `--error-mask`
+end with exit code 2 (`unsupported`). Other operations on an slcan interface
+are `unsupported` too.
+
 ### `isotp-send` / `isotp-receive`
 
 | Flag | Meaning |
@@ -212,6 +229,7 @@ remote frames); `timestamp` and `interface` are optional in input.
 | `encodeRaw` | `encode --raw` |
 | `arxml` | (1.1) `decode`/`encode`/`convert` accept AUTOSAR 4 ARXML |
 | `logAsc`, `logBlf`, `logTrc`, `logCsv` | (1.1) `log-convert` reads and writes the format |
+| `slcan` | (1.2) `send`/`receive` accept `--interface slcan:<pyserial URL>` |
 
 Every document is described by a JSON Schema in [`schemas/`](../schemas):
 `capabilities`, `version`, `frame`, `event` (every line of an operation's

@@ -108,6 +108,24 @@ def result(operation, **fields):
     return doc
 
 
+SLCAN_PREFIX = "slcan:"
+
+
+def is_slcan(name):
+    """(1.2) --interface slcan:<pyserial URL>: a serial-line CAN adapter."""
+    return name.startswith(SLCAN_PREFIX)
+
+
+def effective_features(caps, args):
+    """The features of an operation: an slcan interface carries no error
+    frames, error state indicator, echo or filters."""
+    f = dict(caps["features"])
+    if is_slcan(getattr(args, "interface", "")):
+        for k in ("esi", "errorFrames", "errorFramesTx", "recvOwn", "disableLoopback", "filters", "invertFilters", "joinFilters"):
+            f[k] = False
+    return f
+
+
 def check_interface(name):
     """Fail with exit 4 when the interface is missing or down."""
     base = "/sys/class/net/" + name
@@ -382,7 +400,7 @@ def check_isotp_args(args, caps):
 
 
 def check_receive_args(args, caps):
-    f = caps["features"]
+    f = effective_features(caps, args)
     if args.fd and not f.get("fd"):
         raise unsupported("CAN FD")
     if args.filter and not f.get("filters"):
@@ -396,7 +414,7 @@ def check_receive_args(args, caps):
 
 
 def check_send_frames(frames, args, caps):
-    f = caps["features"]
+    f = effective_features(caps, args)
     if getattr(args, "recv_own", False) and not f.get("recvOwn"):
         raise unsupported("receive own messages")
     if getattr(args, "no_loopback", False) and not f.get("disableLoopback"):
@@ -463,9 +481,13 @@ def run(adapter, capabilities, version, handlers):
             if cmd in ("send", "receive", "capture", "replay", "isotp-send", "isotp-receive"):
                 if args.timeout_ms <= 0:
                     raise usage("--timeout-ms must be positive")
-                check_interface(args.interface)
-                if args.fd and interface_mtu(args.interface) < 72:
-                    raise interface_error("interface %s is not CAN FD capable (mtu < 72)" % args.interface)
+                if is_slcan(args.interface):
+                    if cmd not in ("send", "receive") or not caps["features"].get("slcan"):
+                        raise unsupported("%s on an slcan interface" % cmd)
+                else:
+                    check_interface(args.interface)
+                    if args.fd and interface_mtu(args.interface) < 72:
+                        raise interface_error("interface %s is not CAN FD capable (mtu < 72)" % args.interface)
             handlers[cmd](args, caps)
         sys.exit(EXIT_OK)
     except AdapterError as e:

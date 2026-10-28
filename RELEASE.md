@@ -6,6 +6,29 @@ versions.yaml: the Release workflow builds and self-tests every image
 natively on amd64 and arm64, pushes `<image>:vX.Y.Z-<arch>`, joins them into
 the multi-arch `<image>:vX.Y.Z` and publishes the release with the digests.
 
+## v0.3.0
+
+**Date:** 2026-10-28
+**Previous release:** v0.2.0
+
+Container contract 1.2: additions only, every v0.2.0 consumer keeps working.
+
+* **slcan interfaces** (pythoncan): `send` and `receive` accept `--interface
+  slcan:<url>`, python-can 4.6.1's slcan interface (LAWICEL ASCII, the
+  protocol of CANable-type serial adapters) over a pyserial URL such as
+  `slcan:socket://127.0.0.1:20000`. A consumer plays the adapter on a TCP
+  port (go-canbus's slcan transport does) and checks frames both ways
+  without a CAN interface. CAN FD as `d`/`D`/`b`/`B` records. slcan has no
+  error state indicator, error frames, echo or filters: those requests end
+  with exit 2 (`unsupported`). Capability `slcan`.
+* The pythoncan image adds pyserial 3.5 (BSD-3-Clause, pinned like every
+  package).
+* Self-test suite `slcan`: two python-can slcan clients joined by a TCP
+  relay exchange the standard, extended, remote, CAN FD and burst
+  fixtures; ESI and error frames are refused.
+
+---
+
 ## v0.2.0
 
 **Date:** 2026-10-28
