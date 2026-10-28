@@ -28,6 +28,10 @@ def lines(path):
 
 def frame_rules(d):
     data = bytes.fromhex(d.get("data", ""))
+    if d.get("xl"):
+        if len(data) != d["len"] or not 1 <= len(data) <= 2048:
+            return "CAN XL len does not match 1..2048 data bytes"
+        return None
     ext, fd, remote = d.get("extended", False), d.get("fd", False), d.get("remote", False)
     if d["id"] > (0x1FFFFFFF if ext or d.get("error") else 0x7FF):
         return "identifier out of range"

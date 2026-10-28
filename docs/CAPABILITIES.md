@@ -88,3 +88,12 @@ What each format keeps, frame kind by frame kind: [LOG_FORMATS.md](LOG_FORMATS.m
 | Feature | pythoncan | Verified by |
 |---------|:-:|---|
 | `slcan`: `send`/`receive` on `--interface slcan:<pyserial URL>` | ✓ (python-can 4.6.1, pyserial 3.5) | suite `slcan`: standard, extended, remote, CAN FD and the 2000-frame burst between two python-can slcan clients through a TCP relay; ESI and error frames refused as `unsupported` |
+
+## CAN XL (canutils, 1.3)
+
+| Feature | canutils | Verified by |
+|---------|:-:|---|
+| `xl`: `send`/`receive`/`capture` with `--xl` and CAN XL frame documents | ✓ (can-utils v2025.01 cansend and candump, Linux ≥ 6.9) | suite `xl`: the six frames of `fixtures/frames/xl.jsonl` (priorities 0 and 0x7FF, SEC and RRS, SDT, AF, VCIDs 0x42 and 0xFF, 1 to 2048 bytes) between every pair of adapters with the feature; a receiver without `--xl` gets only the CAN frame of a mixed sequence; `--xl` on an interface with the CAN FD MTU is an environment error (exit 4); adapters without the feature refuse `--xl` (exit 2) |
+
+pythoncan (python-can 4.6.1), socketcanrs, Scapy and python-can-isotp have
+no CAN XL.

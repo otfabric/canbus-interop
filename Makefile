@@ -32,6 +32,7 @@ PUBLISHED_ADAPTERS ?= $(ADAPTERS)
 # The vcan interfaces of the self-test and the command that may change them.
 VCAN  ?= vcan0
 VCAN2 ?= vcan1
+VCANXL ?= vcanxl0
 ADMIN ?= sudo
 # Docker command of the self-test (e.g. DOCKER="sudo docker").
 DOCKER ?= docker
@@ -99,15 +100,16 @@ image-%: FORCE ## Build one adapter image, e.g. image-canutils
 smoke: ## Contract smoke test of every adapter (no CAN interface needed)
 	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' REPORTS=reports scripts/smoke.sh $(ADAPTERS)
 
-vcan: ## Load the CAN modules and create $(VCAN) and $(VCAN2) (needs root through ADMIN)
-	@$(ADMIN) scripts/setup-vcan.sh $(VCAN) $(VCAN2)
+vcan: ## Load the CAN modules and create $(VCAN), $(VCAN2) and $(VCANXL) (CAN XL MTU, Linux >= 6.2) (needs root through ADMIN)
+	@$(ADMIN) scripts/setup-vcan.sh $(VCAN) $(VCAN2) $(VCANXL)
+	@$(ADMIN) sh -c 'ip link set $(VCANXL) down && ip link set $(VCANXL) mtu 2060 && ip link set $(VCANXL) up' || echo "no CAN XL MTU on $(VCANXL) (Linux < 6.2): the xl suite fails"
 
 selftest: ## Reference-to-reference self-test of all suites on vcan (Linux; make vcan first)
-	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" VCAN=$(VCAN) VCAN2=$(VCAN2) ADMIN="$(ADMIN)" \
+	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" VCAN=$(VCAN) VCAN2=$(VCAN2) VCANXL=$(VCANXL) ADMIN="$(ADMIN)" \
 		python3 scripts/selftest.py --reports reports
 
 selftest-%: FORCE ## One suite of the self-test: selftest-raw, selftest-isotp, selftest-dbc, selftest-logs (dbc and logs need no CAN)
-	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" SUITES=$* VCAN=$(VCAN) VCAN2=$(VCAN2) ADMIN="$(ADMIN)" \
+	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" SUITES=$* VCAN=$(VCAN) VCAN2=$(VCAN2) VCANXL=$(VCANXL) ADMIN="$(ADMIN)" \
 		python3 scripts/selftest.py --reports reports
 
 print-adapters: ## Print the adapters (ADAPTERS), one line

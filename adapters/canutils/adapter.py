@@ -39,6 +39,9 @@ CAPABILITIES = {
         # first data byte, like extended addressing (CAN_ISOTP_EXTEND_ADDR).
         "isotpMixedAddressing": True,
         "isotpExtendedIds": True,
+        # (1.3) cansend and candump carry CAN XL frames on an interface
+        # with a CAN XL MTU (Linux >= 6.2), VCIDs passed through.
+        "xl": True,
     },
 }
 
@@ -56,6 +59,9 @@ VERSION = {
 # ── candump/cansend frame syntax (can-utils lib.c) ──────────────────────────
 
 def cansend_text(fr):
+    if fr.xl:
+        flags = 0x80 | (0x01 if fr.sec else 0) | (0x02 if fr.rrs else 0)
+        return "%02X%03X#%02X:%02X:%08X#" % (fr.vcid, fr.priority, flags, fr.sdt, fr.af) + fr.data.hex().upper()
     if fr.error:
         return "%08X#" % (fr.id | cbi.CAN_ERR_FLAG) + fr.data.hex().upper()
     ident = "%08X" % fr.id if fr.extended else "%03X" % fr.id
@@ -71,6 +77,13 @@ def parse_frame_text(text, timestamp=None, interface=None):
     ident, sep, rest = text.partition("#")
     if not sep:
         raise cbi.protocol_error("candump: no '#' in %r" % text)
+    if len(rest) >= 15 and rest[2] == ":" and rest[5] == ":" and rest[14] == "#":
+        # CAN XL: <vcid><prio>#<flags>:<sdt>:<af>#<data> (lib.c)
+        value = int(ident, 16)
+        flags = int(rest[0:2], 16)
+        return cbi.xl_frame_doc(value & cbi.CANXL_MAX_PRIO, value >> 12 if len(ident) == 5 else 0,
+                                bool(flags & 0x01), bool(flags & 0x02), int(rest[3:5], 16),
+                                int(rest[6:14], 16), bytes.fromhex(rest[15:]), timestamp, interface)
     value = int(ident, 16)
     error = len(ident) == 8 and bool(value & cbi.CAN_ERR_FLAG)
     extended = len(ident) == 8 and not error
@@ -177,40 +190,67 @@ def op_send(args, caps):
     cbi.emit(cbi.result("send", sent=len(frames)))
 
 
-def _candump(args, logfile):
+def _accepted(doc, args):
+    """candump always enables CAN_RAW_FD_FRAMES and, on a CAN XL interface,
+    CAN_RAW_XL_FRAMES; a socket without --fd or --xl would not have
+    received those frames."""
+    if doc.get("xl"):
+        return args.xl
+    return not doc.get("fd") or args.fd or args.xl
+
+
+def _candump(args):
+    """Run candump -L until args.count accepted frames arrived. Frames are
+    counted here, not with candump -n: candump also counts the CAN FD and
+    CAN XL frames a receiver without --fd or --xl does not accept.
+    Returns the accepted frame documents and their log lines."""
     deadline = cbi.Deadline(args.timeout_ms)
     before = _receivers(args.interface)
-    argv = ["candump", "-n", str(args.count), "-f", logfile, candump_filters(args)]
-    proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-    ended = False
+    # -L prints log lines to stdout, flushed after every frame.
+    argv = ["candump", "-L", candump_filters(args)]
+    proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    frames, lines = [], []
+    exited = False
     try:
         wait_registered(proc, args.interface, before, deadline)
         cbi.ready()
-        try:
-            proc.wait(max(0.0, deadline.remaining()))
-            ended = True
-        except subprocess.TimeoutExpired:
-            pass
+        fd = proc.stdout.fileno()
+        buf = b""
+        while len(frames) < args.count and not deadline.expired():
+            r, _, _ = select.select([fd], [], [], min(0.1, deadline.remaining()))
+            if not r:
+                if proc.poll() is not None:
+                    break
+                continue
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                # candump closed its output: it is exiting.
+                try:
+                    proc.wait(2)
+                except subprocess.TimeoutExpired:
+                    pass
+                break
+            buf += chunk
+            while b"\n" in buf and len(frames) < args.count:
+                raw, buf = buf.split(b"\n", 1)
+                line = raw.decode().strip()
+                if not line.startswith("("):
+                    continue
+                doc = parse_log_line(line)
+                if _accepted(doc, args):
+                    frames.append(doc)
+                    lines.append(line)
+        exited = proc.poll() is not None
     finally:
         stop(proc)
-    if ended and proc.returncode != 0:
-        # candump ends by itself before the count only on an error, for
-        # example when the interface goes down.
-        message = "candump: exit %d: %s" % (proc.returncode, proc.stderr.read().strip())
+    if exited and proc.returncode != 0 and len(frames) < args.count:
+        # candump ends by itself only on an error, for example when the
+        # interface goes down.
+        message = "candump: exit %d: %s" % (proc.returncode, proc.stderr.read().decode().strip())
         if "down" in message:
             raise cbi.interface_error(message)
         raise cbi.io_error(message)
-    frames = []
-    with open(logfile) as f:
-        for line in f:
-            if line.strip():
-                doc = parse_log_line(line.strip())
-                # candump always enables CAN_RAW_FD_FRAMES; a socket without
-                # --fd would not have received FD frames.
-                if doc["fd"] and not args.fd:
-                    continue
-                frames.append(doc)
-    return frames
+    return frames, lines
 
 
 def finish(operation, received, count):
@@ -221,19 +261,17 @@ def finish(operation, received, count):
 
 
 def op_receive(args, caps):
-    logfile = "/tmp/candump-%d.log" % os.getpid()
-    try:
-        frames = _candump(args, logfile)
-    finally:
-        if os.path.exists(logfile):
-            os.unlink(logfile)
+    frames, _ = _candump(args)
     for doc in frames:
         cbi.frame_event(doc)
     finish("receive", len(frames), args.count)
 
 
 def op_capture(args, caps):
-    frames = _candump(args, args.output)
+    frames, lines = _candump(args)
+    with open(args.output, "w") as f:
+        for line in lines:
+            f.write(line + "\n")
     finish("capture", len(frames), args.count)
 
 
@@ -245,6 +283,8 @@ def op_replay(args, caps):
             if line.strip():
                 parts = line.split()
                 doc = parse_log_line(line.strip())
+                if doc.get("xl"):
+                    raise cbi.unsupported("replaying CAN XL frames")
                 if doc["fd"] and not args.fd:
                     raise cbi.usage("the log has CAN FD frames: use --fd")
                 interfaces.add(parts[1])

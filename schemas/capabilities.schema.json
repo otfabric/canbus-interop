@@ -123,6 +123,10 @@
         "slcan": {
           "type": "boolean",
           "description": "send and receive accept --interface slcan:<pyserial URL> (contract 1.2)"
+        },
+        "xl": {
+          "type": "boolean",
+          "description": "send, receive and capture accept --xl and CAN XL frame documents (contract 1.3)"
         }
       }
     }

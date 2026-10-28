@@ -28,8 +28,9 @@ Environment:
   IMAGE_TEMPLATE    image name with {adapter} (default
                     "ghcr.io/otfabric/canbus-interop-{adapter}:dev")
   ADAPTERS          space-separated subset (default: all)
-  SUITES            space-separated subset of raw isotp dbc logs slcan (default: all)
+  SUITES            space-separated subset of raw isotp dbc logs slcan xl (default: all)
   VCAN, VCAN2       interfaces (default vcan0, vcan1)
+  VCANXL            CAN XL interface, mtu 2060 (default vcanxl0; Linux >= 6.9)
   ADMIN             prefix for "ip link" (default "sudo"; "" when root);
                     set ADMIN=none to skip the interface down/up scenarios
   REPORTS           report directory (default ./reports)
@@ -57,11 +58,14 @@ DOCKER = shlex.split(os.environ.get("DOCKER", "docker"))
 TEMPLATE = os.environ.get("IMAGE_TEMPLATE", "ghcr.io/otfabric/canbus-interop-{adapter}:dev")
 VCAN = os.environ.get("VCAN", "vcan0")
 VCAN2 = os.environ.get("VCAN2", "vcan1")
+VCANXL = os.environ.get("VCANXL", "vcanxl0")
 ADMIN = os.environ.get("ADMIN", "sudo")
 WORK = os.environ.get("WORK") or tempfile.mkdtemp(prefix="canbus-selftest-")
 os.chmod(WORK, 0o777)
 
 FRAME_KEYS = ("id", "extended", "fd", "brs", "esi", "remote", "error", "len", "data")
+XL_FRAME_KEYS = (("xl", False), ("priority", 0), ("vcid", 0), ("sec", False), ("rrs", False),
+                 ("sdt", 0), ("af", 0), ("len", 0), ("data", ""))
 CAN_EFF_FLAG = 0x80000000
 CAN_RTR_FLAG = 0x40000000
 CAN_SFF_MASK = 0x7FF
@@ -209,6 +213,8 @@ def frames_fixture(name):
 
 
 def norm(frame):
+    if frame.get("xl"):
+        return {k: frame.get(k, d) for k, d in XL_FRAME_KEYS}
     return {k: frame.get(k) for k in FRAME_KEYS}
 
 
@@ -1205,12 +1211,62 @@ def suite_slcan(caps):
                "%s refused as unsupported" % why if ok else "exit %d" % code, "pythoncan", "")
 
 
+# ── CAN XL (contract 1.3) ───────────────────────────────────────────────────
+
+def suite_xl(caps):
+    """CAN XL frames between every pair of adapters with the xl feature on
+    a CAN XL interface; a receiver without --xl does not see them; --xl on
+    an interface without the CAN XL MTU is an environment error; adapters
+    without the feature refuse --xl as unsupported."""
+    xl = [a for a in caps if caps[a]["features"].get("xl")]
+    if not xl:
+        record("xl", "transfer", "skip", "no adapter with feature xl (contract 1.3)")
+        return
+    frames = frames_fixture("xl")
+    for s in xl:
+        for r in xl:
+            start = time.monotonic()
+            rx, code, _ = transfer(s, r, frames, False, interface=VCANXL, frames_file="/fixtures/frames/xl.jsonl",
+                                   send_extra=["--xl"], recv_extra=["--xl"])
+            if code is None:
+                diff = "receiver not ready: " + rx.error()
+            elif code:
+                diff = "sender exit %d" % code
+            else:
+                diff = compare_frames(frames, rx.frames())
+            record("xl", "frames-xl", "fail" if diff else "pass", diff or "%d frames" % len(frames), s, r,
+                   time.monotonic() - start)
+            # Without --xl the receiver sees the CAN frame after the XL ones only.
+            mixed = frames[:2] + [{"id": 0x123, "extended": False, "fd": False, "brs": False, "esi": False,
+                                   "remote": False, "error": False, "len": 1, "data": "11"}]
+            rx, code, _ = transfer(s, r, mixed, False, interface=VCANXL, count=1, send_extra=["--xl"])
+            got = rx.frames() if code == 0 else []
+            ok = code == 0 and compare_frames(mixed[2:], got) is None
+            record("xl", "hidden-without-xl", "pass" if ok else "fail",
+                   "only the CAN frame reached a receiver without --xl" if ok else "exit %s, got %s" % (code, got), s, r)
+    mtu = int(open("/sys/class/net/%s/mtu" % VCAN).read())
+    if mtu >= 76:
+        record("xl", "mtu-too-small", "skip", "%s has the CAN XL MTU %d (a new vcan does since Linux 6.2)" % (VCAN, mtu), xl[0], "")
+    else:
+        code, docs, _ = run(xl[0], ["send", "--interface", VCAN, "--xl", "--frames", "/fixtures/frames/xl.jsonl"])
+        ok = code == 4 and any(d.get("code") == "interface" for d in docs)
+        record("xl", "mtu-too-small", "pass" if ok else "fail",
+               "--xl on %s (mtu %d) is an environment error" % (VCAN, mtu) if ok else "exit %s" % code, xl[0], "")
+    for a in caps:
+        if a in xl or "send" not in caps[a]["operations"]:
+            continue
+        code, docs, _ = run(a, ["send", "--interface", VCANXL, "--xl", "--frames", "/fixtures/frames/xl.jsonl"])
+        ok = code == 2 and any(d.get("code") == "unsupported" for d in docs)
+        record("xl", "refuse", "pass" if ok else "fail",
+               "--xl refused as unsupported" if ok else "exit %s" % code, a, "")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reports", default=os.environ.get("REPORTS", os.path.join(ROOT, "reports")))
     args = ap.parse_args()
     adapters = os.environ.get("ADAPTERS", " ".join(ALL_ADAPTERS)).split()
-    suites = os.environ.get("SUITES", "raw isotp dbc logs slcan").split()
+    suites = os.environ.get("SUITES", "raw isotp dbc logs slcan xl").split()
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     caps = {a: capabilities(a) for a in adapters}
     if "raw" in suites:
@@ -1223,6 +1279,8 @@ def main():
         suite_logs(caps)
     if "slcan" in suites:
         suite_slcan(caps)
+    if "xl" in suites:
+        suite_xl(caps)
     failed = report(caps, args.reports, started)
     sys.exit(1 if failed else 0)
 
