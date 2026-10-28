@@ -6,6 +6,33 @@ versions.yaml: the Release workflow builds and self-tests every image
 natively on amd64 and arm64, pushes `<image>:vX.Y.Z-<arch>`, joins them into
 the multi-arch `<image>:vX.Y.Z` and publishes the release with the digests.
 
+## v0.5.0
+
+**Date:** 2026-10-28
+**Previous release:** v0.4.0
+
+Container contract 1.3: additions only, every v0.4.0 consumer keeps working.
+
+* **CAN XL** (canutils): [frame documents](docs/CONTAINER_CONTRACT.md#frame-document)
+  marked `"xl": true` (priority, VCID, SEC and RRS flags, SDT, acceptance
+  field, 1..2048 data bytes), `--xl` on `send`, `receive` and `capture`,
+  capability `xl`. can-utils v2025.01's cansend and candump carry the frames
+  on an interface with the CAN XL MTU, passing VCIDs through; this needs
+  Linux ≥ 6.9 (cansend refuses CAN XL interfaces without
+  `CAN_RAW_XL_VCID_OPTS`). The other adapters refuse `--xl` as
+  `unsupported`.
+* **Fixture** `fixtures/frames/xl.jsonl`: six CAN XL frames (priorities 0
+  and 0x7FF, SEC and RRS, SDT, AF, VCIDs 0x42 and 0xFF, 1 to 2048 bytes).
+* **Self-test suite `xl`**, on `vcanxl0` (mtu 2060, created by `make vcan`):
+  the fixture between every pair with the feature, CAN XL frames hidden from
+  a receiver without `--xl`, `--xl` on an interface without the CAN XL MTU
+  (exit 4), refusal by adapters without the feature (exit 2).
+* **canutils receive and capture** count the frames they accept instead of
+  using `candump -n`: candump also counts CAN FD and CAN XL frames that a
+  receiver without `--fd` or `--xl` drops, so such a receiver could end
+  with fewer frames than asked for. candump now runs with `-L` (flushed log
+  lines on stdout); `capture` writes the accepted lines.
+
 ## v0.4.0
 
 **Date:** 2026-10-28

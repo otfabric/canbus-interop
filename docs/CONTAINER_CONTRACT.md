@@ -1,6 +1,6 @@
 # Container contract
 
-Version: **1.2** (`contract_version` in [versions.yaml](../versions.yaml))
+Version: **1.3** (`contract_version` in [versions.yaml](../versions.yaml))
 
 Every adapter image exposes the same commands, flags, JSON documents and exit
 codes. Consumers (go-canbus's `interop/` suite, this repository's self-test)
@@ -13,6 +13,7 @@ compatible line and changes only with the major version.
 |---------|--------|
 | 1.0 | First release (canbus-interop v0.1.0) |
 | 1.1 | [`log-convert`](#log-convert-pythoncan) (pythoncan): Vector ASC, Vector BLF, PEAK TRC, CSV and candump logs through python-can's readers and writers, `.jsonl` frame documents; capabilities `logAsc`, `logBlf`, `logTrc`, `logCsv`; result field `frames`. [ARXML](#arxml) databases for `decode`, `encode` (cantools, canmatrix) and `convert` (canmatrix); capability `arxml`. Fixtures `fixtures/logs/` and `fixtures/arxml/`. Additions only (canbus-interop v0.2.0) |
+| 1.3 | [CAN XL](#can-xl-canutils): [frame documents](#frame-document) with `"xl": true`, flag `--xl` on `send`, `receive` and `capture`; capability `xl` (canutils: cansend and candump of can-utils v2025.01, Linux ≥ 6.9). Fixture `fixtures/frames/xl.jsonl`. Additions only (canbus-interop v0.5.0) |
 | 1.2 | [slcan interfaces](#slcan-interfaces-pythoncan): `send` and `receive` with `--interface slcan:<pyserial URL>` (pythoncan, python-can's slcan interface over pyserial 3.5); capability `slcan`. Additions only (canbus-interop v0.3.0) |
 
 ## Image layout
@@ -53,6 +54,7 @@ and an error document with code `unsupported`.
 |------|---------|
 | `--interface <name>` | CAN interface (default `vcan0`); (1.2) `slcan:<pyserial URL>` for a serial-line CAN peer, see [slcan interfaces](#slcan-interfaces-pythoncan) |
 | `--fd` | Open the socket in CAN FD mode (required to send or receive FD frames) |
+| `--xl` | (1.3) Open the socket in CAN XL mode, which implies CAN FD (required to send or receive CAN XL frames); the interface needs a CAN XL MTU (76..2060), else exit 4 |
 | `--timeout-ms <n>` | Overall time limit of the operation (default 5000) |
 | `--count <n>` | Stop after n frames/messages (receive, isotp-receive; default 1) |
 
@@ -163,6 +165,19 @@ indicator, error frames, echoes or filters: `send` of frames with `esi` or
 end with exit code 2 (`unsupported`). Other operations on an slcan interface
 are `unsupported` too.
 
+### CAN XL (canutils)
+
+(1.3) With feature `xl`, `send`, `receive` and `capture` take `--xl`: the
+socket carries CAN XL frames (`CAN_RAW_XL_FRAMES`) besides CAN and CAN FD,
+on an interface with a CAN XL MTU (`ip link set vcanxl0 mtu 2060`, Linux ≥
+6.2). VCIDs pass through on sending and every VCID is received
+(`CAN_RAW_XL_VCID_OPTS`, as cansend and candump set it; can-utils v2025.01's
+cansend refuses CAN XL interfaces on kernels without these options, before
+Linux 6.9). A receiver without `--xl` does not see CAN XL frames, and its
+`--count` counts only the frames it accepts. `replay` of a log with CAN XL
+frames is `unsupported`. Adapters without the feature end `--xl` with exit
+code 2 (`unsupported`).
+
 ### `isotp-send` / `isotp-receive`
 
 | Flag | Meaning |
@@ -205,6 +220,19 @@ print nothing when they are bound.
 requested DLC); `data` lower-case hex of exactly `len` bytes (empty for
 remote frames); `timestamp` and `interface` are optional in input.
 
+(1.3) A CAN XL frame is marked `"xl": true` and has no `id`, `extended`,
+`fd`, `brs`, `esi`, `remote` or `error`:
+
+```json
+{"xl": true, "priority": 578, "vcid": 66, "sec": true, "rrs": false,
+ "sdt": 3, "af": 3735928559, "len": 3, "data": "a1b2c3"}
+```
+
+`priority` is the 11-bit priority, `vcid` the virtual CAN network
+identifier (0 = none), `sec` and `rrs` the CANXL_SEC and CANXL_RRS flags,
+`sdt` the SDU type, `af` the acceptance field, `len` 1..2048. In input
+`vcid`, `sec`, `rrs`, `sdt` and `af` default to 0/false.
+
 ## Capability document
 
 ```json
@@ -230,6 +258,7 @@ remote frames); `timestamp` and `interface` are optional in input.
 | `arxml` | (1.1) `decode`/`encode`/`convert` accept AUTOSAR 4 ARXML |
 | `logAsc`, `logBlf`, `logTrc`, `logCsv` | (1.1) `log-convert` reads and writes the format |
 | `slcan` | (1.2) `send`/`receive` accept `--interface slcan:<pyserial URL>` |
+| `xl` | (1.3) `send`/`receive`/`capture` accept `--xl` and CAN XL frame documents |
 
 Every document is described by a JSON Schema in [`schemas/`](../schemas):
 `capabilities`, `version`, `frame`, `event` (every line of an operation's

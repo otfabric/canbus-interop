@@ -46,12 +46,12 @@ jobs:
           # job instead of a can-isotp built out of tree here.
           - arch: amd64
             runner: ubuntu-24.04
-            suites: raw dbc logs slcan
+            suites: raw dbc logs slcan xl
             isotp_out_of_tree: "0"
           # arm64: the runner kernel ships can-isotp (and has no /dev/kvm).
           - arch: arm64
             runner: ubuntu-24.04-arm
-            suites: raw isotp dbc logs slcan
+            suites: raw isotp dbc logs slcan xl
             isotp_out_of_tree: "1"
     steps:
       - uses: actions/checkout@v7

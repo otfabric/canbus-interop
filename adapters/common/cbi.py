@@ -121,7 +121,7 @@ def effective_features(caps, args):
     frames, error state indicator, echo or filters."""
     f = dict(caps["features"])
     if is_slcan(getattr(args, "interface", "")):
-        for k in ("esi", "errorFrames", "errorFramesTx", "recvOwn", "disableLoopback", "filters", "invertFilters", "joinFilters"):
+        for k in ("esi", "errorFrames", "errorFramesTx", "recvOwn", "disableLoopback", "filters", "invertFilters", "joinFilters", "xl"):
             f[k] = False
     return f
 
@@ -173,14 +173,45 @@ def frame_doc(can_id, extended=False, fd=False, brs=False, esi=False,
     return doc
 
 
-class Frame:
-    """A validated frame document."""
+CANXL_MAX_PRIO = 0x7FF
+CANXL_MAX_DLEN = 2048
+CANXL_MIN_MTU = 76  # CANXL_HDR_SIZE + 64: the smallest MTU of a CAN XL device
 
-    __slots__ = ("id", "extended", "fd", "brs", "esi", "remote", "error", "len", "data")
+
+def xl_frame_doc(priority, vcid=0, sec=False, rrs=False, sdt=0, af=0, data=b"",
+                 timestamp=None, interface=None):
+    """(1.3) A CAN XL frame document."""
+    doc = {
+        "xl": True,
+        "priority": int(priority),
+        "vcid": int(vcid),
+        "sec": bool(sec),
+        "rrs": bool(rrs),
+        "sdt": int(sdt),
+        "af": int(af),
+        "len": len(data),
+        "data": bytes(data).hex(),
+    }
+    if timestamp is not None:
+        doc["timestamp"] = "%.6f" % timestamp
+    if interface:
+        doc["interface"] = interface
+    return doc
+
+
+class Frame:
+    """A validated frame document: CAN, CAN FD or (1.3) CAN XL."""
+
+    __slots__ = ("id", "extended", "fd", "brs", "esi", "remote", "error", "len", "data",
+                 "xl", "priority", "vcid", "sec", "rrs", "sdt", "af")
 
     def __init__(self, doc):
         if not isinstance(doc, dict):
             raise usage("frame document is not an object")
+        self.xl = bool(doc.get("xl", False))
+        if self.xl:
+            self._init_xl(doc)
+            return
         try:
             self.id = int(doc["id"])
         except (KeyError, TypeError, ValueError):
@@ -217,7 +248,32 @@ class Frame:
         elif len(self.data) != self.len:
             raise usage("len %d does not match %d data bytes" % (self.len, len(self.data)))
 
+    def _init_xl(self, doc):
+        self.id, self.extended, self.fd, self.brs, self.esi, self.remote, self.error = 0, False, False, False, False, False, False
+        for k in ("id", "extended", "fd", "brs", "esi", "remote", "error"):
+            if k in doc:
+                raise usage("a CAN XL frame document has no %r" % k)
+        try:
+            self.priority = int(doc["priority"])
+            self.vcid = int(doc.get("vcid", 0))
+            self.sdt = int(doc.get("sdt", 0))
+            self.af = int(doc.get("af", 0))
+            self.data = bytes.fromhex(doc.get("data", ""))
+        except (KeyError, TypeError, ValueError):
+            raise usage("bad CAN XL frame document: %r" % (doc,))
+        self.sec = bool(doc.get("sec", False))
+        self.rrs = bool(doc.get("rrs", False))
+        self.len = int(doc.get("len", len(self.data)))
+        if not 0 <= self.priority <= CANXL_MAX_PRIO:
+            raise usage("CAN XL priority 0x%X out of range" % self.priority)
+        if not 0 <= self.vcid <= 0xFF or not 0 <= self.sdt <= 0xFF or not 0 <= self.af <= 0xFFFFFFFF:
+            raise usage("CAN XL vcid, sdt or af out of range")
+        if not 1 <= len(self.data) <= CANXL_MAX_DLEN or self.len != len(self.data):
+            raise usage("CAN XL len %d with %d data bytes (1..2048)" % (self.len, len(self.data)))
+
     def doc(self, **meta):
+        if self.xl:
+            return xl_frame_doc(self.priority, self.vcid, self.sec, self.rrs, self.sdt, self.af, self.data, **meta)
         return frame_doc(self.id, self.extended, self.fd, self.brs, self.esi,
                          self.remote, self.error, self.len, self.data, **meta)
 
@@ -308,6 +364,7 @@ def build_parser(adapter):
     def common(sp, count=False):
         sp.add_argument("--interface", default="vcan0")
         sp.add_argument("--fd", action="store_true")
+        sp.add_argument("--xl", action="store_true")
         sp.add_argument("--timeout-ms", type=int, default=5000)
         if count:
             sp.add_argument("--count", type=int, default=1)
@@ -403,6 +460,8 @@ def check_receive_args(args, caps):
     f = effective_features(caps, args)
     if args.fd and not f.get("fd"):
         raise unsupported("CAN FD")
+    if getattr(args, "xl", False) and not f.get("xl"):
+        raise unsupported("CAN XL")
     if args.filter and not f.get("filters"):
         raise unsupported("filters")
     if any(x.invert for x in args.filter) and not f.get("invertFilters"):
@@ -419,7 +478,13 @@ def check_send_frames(frames, args, caps):
         raise unsupported("receive own messages")
     if getattr(args, "no_loopback", False) and not f.get("disableLoopback"):
         raise unsupported("disabling local loopback")
+    if getattr(args, "xl", False) and not f.get("xl"):
+        raise unsupported("CAN XL")
     for fr in frames:
+        if fr.xl:
+            if not args.xl:
+                raise usage("CAN XL frame without --xl")
+            continue
         if fr.fd and not args.fd:
             raise usage("CAN FD frame without --fd")
         if fr.fd and not f.get("fd"):
@@ -488,6 +553,8 @@ def run(adapter, capabilities, version, handlers):
                     check_interface(args.interface)
                     if args.fd and interface_mtu(args.interface) < 72:
                         raise interface_error("interface %s is not CAN FD capable (mtu < 72)" % args.interface)
+                    if getattr(args, "xl", False) and interface_mtu(args.interface) < CANXL_MIN_MTU:
+                        raise interface_error("interface %s is not CAN XL capable (mtu < %d)" % (args.interface, CANXL_MIN_MTU))
             handlers[cmd](args, caps)
         sys.exit(EXIT_OK)
     except AdapterError as e:

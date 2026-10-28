@@ -2,6 +2,14 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.5.0
+
+Contract 1.3: CAN XL. Frame documents with `"xl": true`, `--xl` on send,
+receive and capture, capability `xl` (canutils: can-utils v2025.01 cansend
+and candump, Linux ≥ 6.9); fixture `fixtures/frames/xl.jsonl`; self-test
+suite `xl`. The canutils receiver counts only the frames it accepts (CAN FD
+or CAN XL frames without `--fd`/`--xl` no longer use up `--count`).
+
 ## v0.4.0
 
 ARXML fixture `multiplexed.arxml` (MULTIPLEXED-I-PDUs with static and
