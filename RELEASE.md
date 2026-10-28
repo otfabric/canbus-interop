@@ -23,6 +23,9 @@ Container contract 1.2: additions only, every v0.2.0 consumer keeps working.
   with exit 2 (`unsupported`). Capability `slcan`.
 * The pythoncan image adds pyserial 3.5 (BSD-3-Clause, pinned like every
   package).
+* The pythoncanisotp adapter gives its CAN socket a 1 MiB receive buffer:
+  a 4095-byte message at STmin 0 (585 frames) overflowed the default one in
+  a slow microVM (self-test `mf-4095`, intermittent).
 * Self-test suite `slcan`: two python-can slcan clients joined by a TCP
   relay exchange the standard, extended, remote, CAN FD and burst
   fixtures; ESI and error frames are refused.

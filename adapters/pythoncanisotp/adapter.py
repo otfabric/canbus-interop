@@ -6,6 +6,7 @@ python-can-isotp's own; frames go through python-can's socketcan interface.
 """
 
 import os
+import socket
 import time
 
 import can
@@ -64,6 +65,11 @@ class Stack:
             self.bus = can.Bus(interface="socketcan", channel=args.interface, fd=args.fd)
         except OSError as e:
             raise cbi.interface_error("%s: %s" % (args.interface, e))
+        # A 4095-byte message at STmin 0 is about 585 back-to-back frames;
+        # the default receive buffer holds a few hundred, and a Python
+        # receiver in a slow VM falls behind: give the socket 1 MiB (as
+        # much as net.core.rmem_max allows).
+        self.bus.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1 << 20)
         params = {
             "stmin": args.stmin,
             "blocksize": args.bs,
