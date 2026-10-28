@@ -2,6 +2,14 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.2.0
+
+Contract 1.1: `log-convert` (python-can's ASC, BLF, TRC, CSV and candump
+readers and writers) and AUTOSAR ARXML for cantools and canmatrix, with
+log and ARXML fixtures; cantools 45.1.1; weekly upstream pin check;
+self-test suites for ARXML and logs; ISO-TP self-test runnable without
+Docker (chroot) and in a microVM.
+
 ## v0.1.0
 
 First release: container contract 1.0, JSON Schemas, seven reference images

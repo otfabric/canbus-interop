@@ -23,6 +23,11 @@ CAPABILITIES = {
         "dbcFD": True,
         "dbcFloat": True,
         "encodeRaw": True,
+        # AUTOSAR 4 ARXML system descriptions (fixtures/arxml): I-SIGNAL-I-PDUs
+        # in CAN frames, LINEAR/TEXTTABLE/SCALE_LINEAR_AND_TEXTTABLE/IDENTICAL
+        # compu methods, 2C base types, CAN FD. Neither applies a PDU's
+        # START-POSITION inside its frame (see docs/FIXTURES.md).
+        "arxml": True,
     },
 }
 

@@ -16,7 +16,7 @@ Each image carries this file and [licenses/](licenses) in
 | socketcanrs | Crates linked into the binary (Cargo.lock: libc, nix, socket2, bitflags, embedded-can, nb, hex, log, smallvec, thiserror, memoffset, cfg-if, …) | MIT OR Apache-2.0 / MIT | Collected from each crate into `/usr/share/doc/socketcan-rs/crates/` of the image | crates.io |
 | scapy | Scapy 2.8.0 | GPL-2.0-only | [GPL-2.0](licenses/scapy-GPL-2.0.txt) | Installed from PyPI as Python source; https://github.com/secdev/scapy/tree/v2.8.0 |
 | pythoncanisotp | python-can-isotp 2.0.7 (`can-isotp`) | MIT | [MIT](licenses/python-can-isotp-MIT.txt) | https://github.com/pylessard/python-can-isotp/tree/v2.0.7 |
-| cantools | cantools 45.1.0 and its dependencies (bitstruct, textparser, crccheck, argparse-addons: MIT) | MIT | [MIT](licenses/cantools-MIT.txt) | https://github.com/cantools/cantools/tree/45.1.0 |
+| cantools | cantools 45.1.1 and its dependencies (bitstruct, textparser, crccheck, argparse-addons: MIT) | MIT | [MIT](licenses/cantools-MIT.txt) | https://github.com/cantools/cantools/tree/45.1.1 |
 | canmatrix | canmatrix 1.3.3 and its dependencies (attrs: MIT, click: BSD-3-Clause, lxml: BSD-3-Clause) | BSD-2-Clause | [BSD-2-Clause](licenses/canmatrix-BSD-2-Clause.txt) | https://github.com/ebroecker/canmatrix |
 | all | Debian bookworm base system, CPython 3.12 (official `python` and `debian` images) | Debian package licences (`/usr/share/doc/*/copyright` in each image), PSF-2.0 | in the image | https://hub.docker.com/_/debian, https://hub.docker.com/_/python |
 

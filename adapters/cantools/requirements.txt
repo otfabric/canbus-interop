@@ -1,6 +1,6 @@
 argparse-addons==0.12.0
 bitstruct==8.24.0
-cantools==45.1.0
+cantools==45.1.1
 crccheck==1.3.1
 packaging==26.3
 python-can==4.6.1

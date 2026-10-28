@@ -1,0 +1,19 @@
+# basic.arxml: patterns per message; then too short and an unknown identifier
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "138e9fe53cabe50d"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "4740d6882f368e2e"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "0a29d388f0073937"}
+{"id": 256, "extended": false, "fd": false, "len": 8, "data": "5ea4634a9939cfbd"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "304e0615b8911345"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "da5c9e9be0ced1c9"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "c1a88556d9ebebd6"}
+{"id": 419369524, "extended": true, "fd": false, "len": 8, "data": "3553c90cd66ad601"}
+{"id": 256, "extended": false, "fd": false, "len": 4, "data": "00010203"}
+{"id": 2046, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}

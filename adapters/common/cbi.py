@@ -23,7 +23,7 @@ EXIT_ENV = 4
 
 ALL_OPERATIONS = [
     "send", "receive", "capture", "replay", "decode", "encode",
-    "isotp-send", "isotp-receive", "convert",
+    "isotp-send", "isotp-receive", "convert", "log-convert",
 ]
 
 CAN_EFF_FLAG = 0x80000000
@@ -325,6 +325,10 @@ def build_parser(adapter):
     c = sub.add_parser("convert")
     c.add_argument("--input", required=True)
     c.add_argument("--output", required=True)
+
+    lc = sub.add_parser("log-convert")
+    lc.add_argument("--input", required=True)
+    lc.add_argument("--output", required=True)
 
     for name in ("isotp-send", "isotp-receive"):
         t = sub.add_parser(name)

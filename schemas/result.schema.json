@@ -25,7 +25,8 @@
         "encode",
         "isotp-send",
         "isotp-receive",
-        "convert"
+        "convert",
+        "log-convert"
       ]
     },
     "sent": {
@@ -51,6 +52,11 @@
     },
     "messages": {
       "type": "integer"
+    },
+    "frames": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "log-convert: frames read from the input and handed to the writer (contract 1.1)"
     }
   },
   "additionalProperties": false

@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+"""A stand-in for the `docker run` / `docker kill` calls of scripts/selftest.py
+that runs an adapter image's exported root file system with chroot, in a
+private mount namespace, on the host's network namespace. It lets the
+self-test run where no Docker daemon is available, notably inside a microVM
+booted with a chosen kernel (TESTING.md, "Kernel ISO-TP in a microVM").
+
+    scripts/chroot-run export <image>...   # (with Docker) unpack images into $ROOTFS
+    DOCKER=scripts/chroot-run scripts/selftest.py   # (as root, no Docker)
+
+$ROOTFS (default /var/tmp/canbus-interop-rootfs) holds <adapter>/ (the file
+system), <adapter>.json (the image's Env and Entrypoint) and run/<name>.pid.
+Supported: run --rm -i --network host -v SRC:DST [--name N] IMAGE ARGS...,
+kill N, rm -f N. Needs root (unshare, mount, chroot).
+"""
+
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+
+ROOTFS = os.environ.get("ROOTFS", "/var/tmp/canbus-interop-rootfs")
+
+
+def adapter_of(image):
+    m = re.search(r"canbus-interop-([a-z0-9]+)", image)
+    if not m:
+        sys.exit("chroot-run: not a canbus-interop image: %s" % image)
+    return m.group(1)
+
+
+def export(images):
+    os.makedirs(ROOTFS, exist_ok=True)
+    for image in images:
+        a = adapter_of(image)
+        root = os.path.join(ROOTFS, a)
+        subprocess.run(["rm", "-rf", root], check=True)
+        os.makedirs(root)
+        cid = subprocess.run(["docker", "create", image], capture_output=True, text=True, check=True).stdout.strip()
+        try:
+            exp = subprocess.Popen(["docker", "export", cid], stdout=subprocess.PIPE)
+            subprocess.run(["tar", "-x", "-C", root], stdin=exp.stdout, check=True)
+            exp.wait()
+            cfg = json.loads(subprocess.run(["docker", "inspect", image], capture_output=True, text=True,
+                                            check=True).stdout)[0]["Config"]
+        finally:
+            subprocess.run(["docker", "rm", cid], capture_output=True)
+        for d in ("work", "proc", "dev", "sys", "tmp"):
+            os.makedirs(os.path.join(root, d), exist_ok=True)
+        with open(root + ".json", "w") as f:
+            json.dump({"Env": cfg.get("Env") or [], "Entrypoint": cfg.get("Entrypoint") or []}, f)
+        print("exported %s -> %s" % (image, root))
+
+
+def run(argv):
+    mounts, name, i = [], None, 0
+    while i < len(argv) and argv[i].startswith("-"):
+        opt = argv[i]
+        if opt in ("--rm", "-i"):
+            i += 1
+        elif opt == "--network":
+            if argv[i + 1] != "host":
+                sys.exit("chroot-run: only --network host")
+            i += 2
+        elif opt == "-v":
+            src, dst = argv[i + 1].split(":")[:2]
+            mounts.append((src, dst))
+            i += 2
+        elif opt == "--name":
+            name = argv[i + 1]
+            i += 2
+        else:
+            sys.exit("chroot-run: unsupported option %s" % opt)
+    image, args = argv[i], argv[i + 1:]
+    a = adapter_of(image)
+    root = os.path.join(ROOTFS, a)
+    cfg = json.load(open(root + ".json"))
+    env = dict(e.split("=", 1) for e in cfg["Env"])
+    script = ["set -e", "mount --make-rprivate /", "mount -t proc proc %s/proc" % root,
+              "mount --rbind /dev %s/dev" % root, "mount --rbind /sys %s/sys" % root,
+              "mount -t tmpfs tmpfs %s/tmp" % root]
+    for src, dst in mounts:
+        script.append("mount --bind %s %s%s" % (src, root, dst))
+    cmd = " ".join("'%s'" % c.replace("'", "'\\''") for c in cfg["Entrypoint"] + args)
+    script.append("exec chroot %s %s" % (root, cmd))
+    # A session of its own, so kill reaches the adapter and the programs it
+    # starts (isotprecv, candump), as `docker kill` would.
+    p = subprocess.Popen(["unshare", "-m", "sh", "-c", "\n".join(script)], env=env, start_new_session=True)
+    if name:
+        os.makedirs(os.path.join(ROOTFS, "run"), exist_ok=True)
+        with open(os.path.join(ROOTFS, "run", name + ".pid"), "w") as f:
+            f.write(str(p.pid))
+    signal.signal(signal.SIGTERM, lambda *_: os.killpg(p.pid, signal.SIGTERM))
+    code = p.wait()
+    if name:
+        try:
+            os.unlink(os.path.join(ROOTFS, "run", name + ".pid"))
+        except OSError:
+            pass
+    sys.exit(code if code >= 0 else 128 - code)
+
+
+def kill(name):
+    try:
+        pid = int(open(os.path.join(ROOTFS, "run", name + ".pid")).read())
+    except (OSError, ValueError):
+        sys.exit(1)
+    try:
+        os.killpg(pid, signal.SIGTERM)
+    except OSError:
+        sys.exit(1)
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    cmd, rest = sys.argv[1], sys.argv[2:]
+    if cmd == "export":
+        export(rest)
+    elif cmd == "run":
+        run(rest)
+    elif cmd == "kill":
+        kill(rest[0])
+    elif cmd == "rm":
+        kill(rest[-1])
+    else:
+        sys.exit("chroot-run: unsupported command %s" % cmd)
+
+
+if __name__ == "__main__":
+    main()

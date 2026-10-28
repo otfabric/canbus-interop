@@ -1,0 +1,11 @@
+# pdu-offset.arxml: patterns per message; then too short and an unknown identifier
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "ffffffffffffffff"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "5555555555555555"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "aaaaaaaaaaaaaaaa"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "cfab7239a45fe444"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "d485523a1272c87e"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "962ede731f1c2d94"}
+{"id": 768, "extended": false, "fd": false, "len": 8, "data": "7bf5ddeb90774498"}
+{"id": 768, "extended": false, "fd": false, "len": 4, "data": "00010203"}
+{"id": 2046, "extended": false, "fd": false, "len": 8, "data": "0000000000000000"}

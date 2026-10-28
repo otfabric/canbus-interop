@@ -9,8 +9,12 @@ interfaces and checks the documents of docs/CONTAINER_CONTRACT.md:
           receivers, capture/replay, malformed input, interface down/missing
   isotp   kernel CAN_ISOTP (canutils) <-> python-can-isotp, both directions;
           invalid sequences injected with a raw-CAN adapter
-  dbc     cantools <-> canmatrix decode and encode agreement on the DBC
-          fixtures (tests/known-differences.tsv lists accepted differences)
+  dbc     cantools <-> canmatrix decode and encode agreement on the DBC,
+          KCD and ARXML fixtures (tests/known-differences.tsv lists accepted
+          differences)
+  logs    python-can's ASC, BLF, TRC and CSV writers and readers
+          (log-convert): reproduction of fixtures/logs and the fidelity
+          matrix of docs/LOG_FORMATS.md
 
 Selection is capability driven: a pair or scenario an adapter cannot do is
 recorded as "skip" with the reason, never as "pass". Results go to
@@ -22,7 +26,7 @@ Environment:
   IMAGE_TEMPLATE    image name with {adapter} (default
                     "ghcr.io/otfabric/canbus-interop-{adapter}:dev")
   ADAPTERS          space-separated subset (default: all)
-  SUITES            space-separated subset of raw isotp dbc (default: all)
+  SUITES            space-separated subset of raw isotp dbc logs (default: all)
   VCAN, VCAN2       interfaces (default vcan0, vcan1)
   ADMIN             prefix for "ip link" (default "sudo"; "" when root);
                     set ADMIN=none to skip the interface down/up scenarios
@@ -736,30 +740,36 @@ def suite_isotp_injected(caps, raw, receivers):
         return {"id": 0x7E0, "len": len(b), "data": b.hex()}
 
     ff = fr("1014" + data[:6].hex())
+    # A negative case ends with a valid single frame: the receiver must
+    # deliver exactly that one message. It proves the bad frames reached the
+    # receiver (and were dropped) instead of arriving after its timeout.
+    probe = fr("01AA")
     cases = [
-        ("injected-valid", [ff, fr("21" + data[6:13].hex()), fr("22" + data[13:20].hex())], True),
-        ("injected-wrong-sn", [ff, fr("22" + data[6:13].hex()), fr("23" + data[13:20].hex())], False),
-        ("injected-cf-without-ff", [fr("21" + data[6:13].hex())], False),
-        ("injected-sf-len-0", [fr("00")], False),
+        ("injected-valid", [ff, fr("21" + data[6:13].hex()), fr("22" + data[13:20].hex())], data),
+        ("injected-wrong-sn", [ff, fr("22" + data[6:13].hex()), fr("23" + data[13:20].hex()), probe], b"\xaa"),
+        ("injected-cf-without-ff", [fr("21" + data[6:13].hex()), probe], b"\xaa"),
+        ("injected-sf-len-0", [fr("00"), probe], b"\xaa"),
     ]
     for r in receivers:
-        for name, frames, deliver in cases:
+        for name, frames, want in cases:
+            # Generous timeout: a slow host (a microVM) can take seconds to
+            # start the injecting container.
             rx = Background(r, ["isotp-receive", "--interface", VCAN, "--tx-id", "7E8", "--rx-id", "7E0",
-                                "--count", "1", "--timeout-ms", "4000"])
+                                "--count", "1", "--timeout-ms", "30000"])
             if not rx.wait_ready():
                 rx.finish(5)
                 record("isotp", name, "fail", "receiver not ready", raw, r)
                 continue
             path = write_work("inject-%s.jsonl" % name, frames)
             run(raw, ["send", "--interface", VCAN, "--gap-us", "20000", "--frames", path])
-            code = rx.finish(20)
+            code = rx.finish(40)
             msgs = rx.messages()
-            if deliver:
-                ok = code == 0 and len(msgs) == 1 and msgs[0]["data"] == data.hex()
+            ok = code == 0 and len(msgs) == 1 and msgs[0]["data"] == want.hex()
+            if want == data:
                 detail = "message delivered" if ok else "exit %d, %d messages" % (code, len(msgs))
             else:
-                ok = code == 3 and not msgs
-                detail = "nothing delivered" if ok else "exit %d, messages %s" % (code, msgs)
+                detail = ("bad frames dropped, the following single frame delivered" if ok else
+                          "exit %d, messages %s" % (code, [m.get("data") for m in msgs]))
             record("isotp", name, "pass" if ok else "fail", detail, raw, r)
 
 
@@ -811,6 +821,120 @@ def suite_dbc(caps):
                 outs[o] = (code, docs, err)
             compare_encoded(base, outs, a, b, known)
     suite_kcd(caps, known)
+    suite_arxml(caps, oracles, known)
+
+
+def suite_arxml(caps, oracles, known):
+    """Both oracles read the ARXML fixtures directly (decode and encode
+    vectors must agree); canmatrix converts them to DBC and cantools decodes
+    with the conversion; the PDU-offset fixture records what both do with a
+    PDU that does not start at bit 0 of its frame."""
+    if not all(caps[o]["features"].get("arxml") for o in oracles):
+        record("dbc", "arxml", "skip", "an oracle lacks feature arxml")
+        return
+    a, b = oracles
+    adir = os.path.join(ROOT, "fixtures", "arxml")
+    for name in sorted(os.listdir(adir)):
+        if not name.endswith(".arxml"):
+            continue
+        base = name[:-6]
+        db = "/fixtures/arxml/" + name
+        outs = {o: run(o, ["decode", "--db", db, "--frames", "/fixtures/arxml/%s.frames.jsonl" % base]) for o in oracles}
+        compare_decoded("arxml-" + base, outs, a, b, known)
+        outs = {o: run(o, ["encode", "--db", db, "--messages", "/fixtures/arxml/%s.messages.jsonl" % base]) for o in oracles}
+        compare_encoded("arxml-" + base, outs, a, b, known)
+        if "convert" in caps["canmatrix"]["operations"]:
+            out = "arxml-%s-%s.dbc" % (base, uuid.uuid4().hex[:6])
+            code, docs, err = run("canmatrix", ["convert", "--input", db, "--output", "/work/" + out])
+            if code != 0:
+                record("dbc", "arxml-convert-" + base, "fail", "exit %d: %s" % (code, docs[-1:] or err[-200:]), "canmatrix", "")
+                continue
+            frames = "/fixtures/arxml/%s.frames.jsonl" % base
+            outs = {"canmatrix": run("canmatrix", ["decode", "--db", db, "--frames", frames]),
+                    "cantools": run("cantools", ["decode", "--db", "/work/" + out, "--frames", frames])}
+            compare_decoded("arxml-dbc-" + base, outs, "cantools", "canmatrix", known)
+    # A PDU mapped at byte 2 of its frame: AUTOSAR places signal A of
+    # pdu-offset.arxml in byte 2 (0x33 for this payload). Record what each
+    # oracle does, so a consumer knows it cannot use them as oracle here.
+    frame = write_work("pdu-offset-probe.jsonl", [{"id": 0x300, "extended": False, "fd": False, "len": 8,
+                                                   "data": "1122334455667788"}])
+    seen = {}
+    for o in oracles:
+        code, docs, err = run(o, ["decode", "--db", "/fixtures/arxml/pdu-offset.arxml", "--frames", frame])
+        dec = [d for d in docs if d.get("type") == "decoded"]
+        seen[o] = dec[0]["signals"]["A"]["raw"] if dec else "error"
+    applied = [o for o in oracles if seen[o] == str(0x33)]
+    status = "pass" if len(applied) == len(oracles) else "known"
+    record("dbc", "arxml-pdu-offset", status,
+           "signal A of a PDU at frame byte 2 decodes as %s (AUTOSAR: 51 = byte 2); %s" % (
+               ", ".join("%s=%s" % (o, seen[o]) for o in oracles),
+               "both apply the PDU offset" if status == "pass" else
+               "an oracle ignores PDU-TO-FRAME-MAPPING START-POSITION (tests/known-differences.tsv)"), a, b)
+
+
+# ── logs ────────────────────────────────────────────────────────────────────
+
+LOG_FORMATS = {"asc": "logAsc", "blf": "logBlf", "trc": "logTrc", "csv": "logCsv"}
+
+
+def _log_docs(path):
+    out = []
+    for d in load_jsonl(path):
+        d = dict(d)
+        d.pop("timestamp", None)
+        d.pop("interface", None)
+        out.append(d)
+    return out
+
+
+def suite_logs(caps):
+    """python-can's log writers and readers (pythoncan log-convert): each
+    committed fixtures/logs/frames.<fmt> must read back exactly as the
+    committed <fmt>.read.jsonl, BLF must be lossless, and a fresh
+    write/read round trip of frames.jsonl must give the committed reading."""
+    if "pythoncan" not in caps or "log-convert" not in caps["pythoncan"]["operations"]:
+        record("logs", "log-convert", "skip", "needs pythoncan with log-convert")
+        return
+    feats = caps["pythoncan"]["features"]
+    ldir = os.path.join(ROOT, "fixtures", "logs")
+    source = _log_docs(os.path.join(ldir, "frames.jsonl"))
+    src = write_work("logs-frames.jsonl", load_jsonl(os.path.join(ldir, "frames.jsonl")))
+    for ext, feat in sorted(LOG_FORMATS.items()):
+        if not feats.get(feat):
+            record("logs", ext, "skip", "pythoncan lacks %s" % feat, "pythoncan", "")
+            continue
+        ref_path = os.path.join(ldir, "%s.read.jsonl" % ext)
+        if os.path.exists(os.path.join(ldir, "frames." + ext)):
+            out = "logs-read-%s-%s.jsonl" % (ext, uuid.uuid4().hex[:6])
+            code, docs, err = run("pythoncan", ["log-convert", "--input", "/fixtures/logs/frames." + ext, "--output", "/work/" + out])
+            got = _log_docs(os.path.join(WORK, out)) if code == 0 else None
+            ok = got == _log_docs(ref_path)
+            record("logs", "read-" + ext, "pass" if ok else "fail",
+                   "%d frames read as committed" % len(got) if ok else "exit %d or reading differs from %s.read.jsonl" % (code, ext),
+                   "pythoncan", "")
+        # Fresh round trip: write the source with python-can, read it back.
+        f1 = "logs-rt-%s.%s" % (uuid.uuid4().hex[:6], ext)
+        f2 = f1 + ".jsonl"
+        c1, _, e1 = run("pythoncan", ["log-convert", "--input", src, "--output", "/work/" + f1])
+        c2, _, e2 = run("pythoncan", ["log-convert", "--input", "/work/" + f1, "--output", "/work/" + f2])
+        if c1 or c2:
+            record("logs", "round-trip-" + ext, "fail", "exit %d/%d: %s" % (c1, c2, (e1 + e2)[-200:]), "pythoncan", "")
+            continue
+        back = _log_docs(os.path.join(WORK, f2))
+        lossless = back == source
+        if os.path.exists(ref_path):
+            same = back == _log_docs(ref_path)
+            status = "pass" if same else "fail"
+            detail = "%d of %d frames back; %s; %s" % (len(back), len(source), "lossless" if lossless else
+                                                       "lossy as documented in docs/LOG_FORMATS.md",
+                                                       "matches the committed reading" if same else "differs from the committed reading")
+        else:
+            survived = sum(1 for x, y in zip(source, back) if x == y)
+            status = "pass" if lossless else "known"
+            detail = "%d of %d frames survive unchanged%s" % (survived, len(source), "" if lossless else " (docs/LOG_FORMATS.md)")
+        if ext == "blf" and not lossless:
+            status, detail = "fail", "BLF round trip is not lossless: " + detail
+        record("logs", "round-trip-" + ext, status, detail, "pythoncan", "")
 
 
 def suite_kcd(caps, known):
@@ -940,7 +1064,7 @@ def main():
     ap.add_argument("--reports", default=os.environ.get("REPORTS", os.path.join(ROOT, "reports")))
     args = ap.parse_args()
     adapters = os.environ.get("ADAPTERS", " ".join(ALL_ADAPTERS)).split()
-    suites = os.environ.get("SUITES", "raw isotp dbc").split()
+    suites = os.environ.get("SUITES", "raw isotp dbc logs").split()
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     caps = {a: capabilities(a) for a in adapters}
     if "raw" in suites:
@@ -949,6 +1073,8 @@ def main():
         suite_isotp(caps)
     if "dbc" in suites:
         suite_dbc(caps)
+    if "logs" in suites:
+        suite_logs(caps)
     failed = report(caps, args.reports, started)
     sys.exit(1 if failed else 0)
 
