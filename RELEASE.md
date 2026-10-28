@@ -20,7 +20,8 @@ Container contract 1.3: additions only, every v0.4.0 consumer keeps working.
   on an interface with the CAN XL MTU, passing VCIDs through; this needs
   Linux ≥ 6.9 (cansend refuses CAN XL interfaces without
   `CAN_RAW_XL_VCID_OPTS`). The other adapters refuse `--xl` as
-  `unsupported`.
+  `unsupported` (socketcanrs now recognises `--xl` to do so rather than
+  rejecting an unknown flag).
 * **Fixture** `fixtures/frames/xl.jsonl`: six CAN XL frames (priorities 0
   and 0x7FF, SEC and RRS, SDT, AF, VCIDs 0x42 and 0xFF, 1 to 2048 bytes).
 * **Self-test suite `xl`**, on `vcanxl0` (mtu 2060, created by `make vcan`):

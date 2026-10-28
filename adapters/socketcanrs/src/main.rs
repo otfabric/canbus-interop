@@ -420,6 +420,8 @@ fn parse_args() -> Result<Args, Fail> {
             }
             "--recv-own" => a.recv_own = true,
             "--no-loopback" => a.no_loopback = true,
+            // (contract 1.3) No CAN XL in this adapter: refused, not unknown.
+            "--xl" => return Err(unsupported("CAN XL")),
             s if s.starts_with("--") => return Err(usage(format!("unknown flag {}", s))),
             s => a.positional.push(s.to_string()),
         }
