@@ -15,6 +15,8 @@ interfaces and checks the documents of docs/CONTAINER_CONTRACT.md:
   logs    python-can's ASC, BLF, TRC and CSV writers and readers
           (log-convert): reproduction of fixtures/logs and the fidelity
           matrix of docs/LOG_FORMATS.md
+  slcan   (1.2) python-can's slcan interface, two containers joined by a
+          TCP relay (pyserial socket:// URLs); no CAN interface needed
 
 Selection is capability driven: a pair or scenario an adapter cannot do is
 recorded as "skip" with the reason, never as "pass". Results go to
@@ -26,7 +28,7 @@ Environment:
   IMAGE_TEMPLATE    image name with {adapter} (default
                     "ghcr.io/otfabric/canbus-interop-{adapter}:dev")
   ADAPTERS          space-separated subset (default: all)
-  SUITES            space-separated subset of raw isotp dbc logs (default: all)
+  SUITES            space-separated subset of raw isotp dbc logs slcan (default: all)
   VCAN, VCAN2       interfaces (default vcan0, vcan1)
   ADMIN             prefix for "ip link" (default "sudo"; "" when root);
                     set ADMIN=none to skip the interface down/up scenarios
@@ -40,6 +42,7 @@ import json
 import os
 import queue
 import shlex
+import socket
 import subprocess
 import sys
 import tempfile
@@ -1059,12 +1062,105 @@ def report(caps, outdir, started):
     return counts.get("fail", 0)
 
 
+# ── slcan (contract 1.2) ─────────────────────────────────────────────────────
+
+class Relay:
+    """Two TCP listeners on 127.0.0.1 whose first clients are joined: what
+    one sends, the other receives. Two slcan clients (each playing the host)
+    see each other's frames as an adapter's; each ignores the other's
+    setup commands."""
+
+    def __init__(self):
+        self.listeners = []
+        for _ in range(2):
+            ln = socket.socket()
+            ln.bind(("127.0.0.1", 0))
+            ln.listen(1)
+            ln.settimeout(60)
+            self.listeners.append(ln)
+        self.conns = [None, None]
+        self.both = threading.Event()
+        for i in range(2):
+            threading.Thread(target=self._accept, args=(i,), daemon=True).start()
+
+    def url(self, i):
+        return "slcan:socket://127.0.0.1:%d" % self.listeners[i].getsockname()[1]
+
+    def _accept(self, i):
+        try:
+            self.conns[i], _ = self.listeners[i].accept()
+        except OSError:
+            return
+        if all(self.conns):
+            self.both.set()
+        self.both.wait(60)
+        if all(self.conns):
+            self._pump(self.conns[i], self.conns[1 - i])
+
+    def _pump(self, src, dst):
+        try:
+            while True:
+                b = src.recv(65536)
+                if not b:
+                    break
+                dst.sendall(b)
+        except OSError:
+            pass
+        try:
+            dst.shutdown(socket.SHUT_WR)
+        except OSError:
+            pass
+
+    def close(self):
+        for s in self.listeners + [c for c in self.conns if c]:
+            try:
+                s.close()
+            except OSError:
+                pass
+
+
+SLCAN_FIXTURES = ["standard", "extended", "remote", "fd", "burst"]
+
+
+def suite_slcan(caps):
+    """python-can's slcan interface to itself through a TCP relay: each
+    fixture slcan can carry arrives unchanged and in order, and frames
+    slcan cannot carry (ESI, error frames) are refused as unsupported."""
+    if "pythoncan" not in caps or not caps["pythoncan"]["features"].get("slcan"):
+        record("slcan", "transfer", "skip", "needs pythoncan with slcan (contract 1.2)")
+        return
+    for name in SLCAN_FIXTURES:
+        frames = frames_fixture(name)
+        relay = Relay()
+        start = time.monotonic()
+        try:
+            rx, code, docs = transfer("pythoncan", "pythoncan", frames, True, interface=relay.url(1),
+                                      send_extra=["--interface", relay.url(0)])
+        finally:
+            relay.close()
+        diff = compare_frames(frames, rx.frames()) if code is not None else "receiver not ready: " + rx.error()
+        if code:
+            diff = "send exit %d" % code
+        record("slcan", name, "fail" if diff else "pass", diff or "%d frames" % len(frames),
+               "pythoncan", "pythoncan", time.monotonic() - start)
+    for name, why in (("fd-esi", "ESI"), ("error", "error frames")):
+        relay = Relay()
+        try:
+            path = write_work("slcan-%s.jsonl" % name, frames_fixture(name))
+            code, docs, _ = run("pythoncan", ["send", "--interface", relay.url(0), "--frames", path, "--fd"])
+        finally:
+            relay.close()
+        ok = code == 2 and any(d.get("code") == "unsupported" for d in docs)
+        record("slcan", "refuse-" + name, "pass" if ok else "fail",
+               "%s refused as unsupported" % why if ok else "exit %d" % code, "pythoncan", "")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reports", default=os.environ.get("REPORTS", os.path.join(ROOT, "reports")))
     args = ap.parse_args()
     adapters = os.environ.get("ADAPTERS", " ".join(ALL_ADAPTERS)).split()
-    suites = os.environ.get("SUITES", "raw isotp dbc logs").split()
+    suites = os.environ.get("SUITES", "raw isotp dbc logs slcan").split()
     started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     caps = {a: capabilities(a) for a in adapters}
     if "raw" in suites:
@@ -1075,6 +1171,8 @@ def main():
         suite_dbc(caps)
     if "logs" in suites:
         suite_logs(caps)
+    if "slcan" in suites:
+        suite_slcan(caps)
     failed = report(caps, args.reports, started)
     sys.exit(1 if failed else 0)
 

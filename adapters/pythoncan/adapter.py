@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""canbus-interop adapter for python-can (socketcan interface)."""
+"""canbus-interop adapter for python-can (socketcan and slcan interfaces)."""
 
 import os
 import struct
@@ -34,6 +34,9 @@ CAPABILITIES = {
         "logBlf": True,
         "logTrc": True,
         "logCsv": True,
+        # (1.2) send/receive on --interface slcan:<pyserial URL> with
+        # python-can's slcan interface (pyserial 3.5).
+        "slcan": True,
     },
 }
 
@@ -51,13 +54,19 @@ SOL_CAN_RAW = 101
 
 
 def open_bus(args, filters=None, recv_own=False, loopback=True):
-    kwargs = dict(interface="socketcan", channel=args.interface, fd=args.fd,
-                  receive_own_messages=recv_own, local_loopback=loopback)
+    if cbi.is_slcan(args.interface):
+        # python-can's slcan sends "C", "S6", "" and "O" on open and "C"
+        # on shutdown; sleep_after_open=0: the peer is no USB device.
+        kwargs = dict(interface="slcan", channel=args.interface[len(cbi.SLCAN_PREFIX):],
+                      bitrate=500000, sleep_after_open=0)
+    else:
+        kwargs = dict(interface="socketcan", channel=args.interface, fd=args.fd,
+                      receive_own_messages=recv_own, local_loopback=loopback)
     if filters:
         kwargs["can_filters"] = [{"can_id": f.raw_id, "can_mask": f.raw_mask} for f in filters]
     try:
         return can.Bus(**kwargs)
-    except OSError as e:
+    except (OSError, can.CanInitializationError) as e:
         raise cbi.interface_error("%s: %s" % (args.interface, e))
 
 
@@ -125,8 +134,9 @@ def op_send(args, caps):
 def _receive(args, on_message):
     bus = open_bus(args, args.filter)
     try:
-        # python-can enables all error classes; apply the requested mask.
-        bus.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, struct.pack("=I", args.error_mask))
+        if not cbi.is_slcan(args.interface):
+            # python-can enables all error classes; apply the requested mask.
+            bus.socket.setsockopt(SOL_CAN_RAW, CAN_RAW_ERR_FILTER, struct.pack("=I", args.error_mask))
         cbi.ready()
         deadline = cbi.Deadline(args.timeout_ms)
         received = 0

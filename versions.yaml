@@ -4,8 +4,8 @@
 # Cargo.toml (with Cargo.lock) are the source of truth for a build:
 # scripts/check-versions.sh fails when this file disagrees with them.
 
-interop_version: "0.2.0"
-contract_version: "1.1"          # docs/CONTAINER_CONTRACT.md; documents carry schemaVersion "1.0"
+interop_version: "0.3.0"
+contract_version: "1.2"          # docs/CONTAINER_CONTRACT.md; documents carry schemaVersion "1.0"
 fixture_schema: "1.0"            # schemas/frame.schema.json, schemas/encode-input.schema.json
 
 protocol:
@@ -41,7 +41,7 @@ implementations:
     revision: "702ec3eb79530b9242a1167c049cfe2cfec235e5"
     license: "LGPL-3.0-only"
     language: "Python"
-    stack: "Linux kernel CAN_RAW through Python's socket module"
+    stack: "Linux kernel CAN_RAW through Python's socket module; slcan (serial-line CAN) through pyserial 3.5"
     roles: [send, receive, capture, replay, log-convert]
     published: true
 

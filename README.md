@@ -16,7 +16,7 @@ trusts a result against it.
 | Adapter | Upstream | Version | Language | Licence | What it exercises | Operations |
 |---------|----------|---------|----------|---------|-------------------|------------|
 | `canutils` | [linux-can/can-utils](https://github.com/linux-can/can-utils) | v2025.01 | C | GPL-2.0-only OR BSD-3-Clause | Kernel `CAN_RAW` (cansend, candump, canplayer); **kernel `CAN_ISOTP`** (isotpsend, isotprecv) | send, receive, capture, replay, isotp-send, isotp-receive |
-| `pythoncan` | [python-can](https://github.com/hardbyte/python-can) | 4.6.1 | Python | LGPL-3.0-only | Kernel `CAN_RAW` through Python's socket module; python-can's log readers/writers (candump, Vector ASC and BLF, PEAK TRC, CSV) | send, receive, capture, replay, log-convert |
+| `pythoncan` | [python-can](https://github.com/hardbyte/python-can) | 4.6.1 | Python | LGPL-3.0-only | Kernel `CAN_RAW` through Python's socket module; **slcan** (serial-line CAN) through pyserial; python-can's log readers/writers (candump, Vector ASC and BLF, PEAK TRC, CSV) | send, receive, capture, replay, log-convert |
 | `socketcanrs` | [socketcan-rs](https://github.com/socketcan-rs/socketcan-rs) (crate `socketcan`) | 4.0.0 | Rust | MIT | Kernel `CAN_RAW` through libc/socket2 | send, receive |
 | `scapy` | [Scapy](https://github.com/secdev/scapy) | 2.8.0 | Python | GPL-2.0-only | Kernel `CAN_RAW` (NativeCANSocket) with Scapy's own frame codec | send, receive |
 | `pythoncanisotp` | [python-can-isotp](https://github.com/pylessard/python-can-isotp) | 2.0.7 | Python | MIT | **Userspace ISO-TP** state machine over python-can | isotp-send, isotp-receive |

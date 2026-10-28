@@ -2,6 +2,12 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.3.0
+
+Contract 1.2: slcan interfaces for pythoncan (`send`/`receive` with
+`--interface slcan:<pyserial URL>`, python-can's slcan interface over
+pyserial 3.5), capability `slcan`, self-test suite `slcan`.
+
 ## v0.2.0
 
 Contract 1.1: `log-convert` (python-can's ASC, BLF, TRC, CSV and candump

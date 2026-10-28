@@ -35,6 +35,8 @@ set -e
 uname -r
 export MODPROBE_OPTIONS="-d $state/kernel"
 modprobe -a can can-raw vcan can-isotp
+# Let the userspace ISO-TP receivers have the 1 MiB socket buffer they ask for.
+sysctl -qw net.core.rmem_max=1048576
 for i in 0 1; do ip link add vcan\$i type vcan; ip link set vcan\$i mtu 72 up; done
 cd "$root"
 env ROOTFS="$ROOTFS" DOCKER="$root/scripts/chroot-run" ADMIN="" \
