@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: MIT
 """Validate adapter output against schemas/: every line of every *.jsonl file
 under the given directories, by its "type" (capabilities and version
-documents by file name: *capabilities*.json, *version*.json)."""
+documents by file name: *capabilities*.json, *version*.json), and results.json
+(interop-result-v1)."""
 import glob
 import json
 import os
@@ -27,6 +28,11 @@ def main():
     for d in sys.argv[1:]:
         for path in sorted(glob.glob(os.path.join(d, "**", "*.json*"), recursive=True)):
             name = os.path.basename(path)
+            if name == "results.json":
+                count += 1
+                for e in Draft202012Validator(validators["interop-result-v1.schema.json"]).iter_errors(json.load(open(path))):
+                    errors.append("%s: %s" % (path, e.message[:200]))
+                continue
             if not (name.endswith(".jsonl") or name.endswith("capabilities.json") or name.endswith("version.json")):
                 continue
             validator = caps if "capabilities" in name else version if "version" in name else event

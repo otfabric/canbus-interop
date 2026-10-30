@@ -13,8 +13,9 @@
 | Validate every document kept by smoke and self-test | `make documents` | Python 3 |
 | Everything | `make ci` | Linux with CAN modules |
 
-The self-test writes `reports/selftest.json`, `reports/selftest.md` and
-`reports/documents/` (every JSON document each image printed, validated by
+The self-test writes `reports/selftest.json`, `reports/selftest.md`,
+`reports/results.json` (interop-result-v1: a run with no pass, or with a known
+difference that no longer reproduces, fails) and `reports/documents/` (every JSON document each image printed, validated by
 `make documents`). `scripts/compat-report.py reports/selftest.json` renders
 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 

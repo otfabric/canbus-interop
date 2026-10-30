@@ -20,8 +20,9 @@ interfaces and checks the documents of docs/CONTAINER_CONTRACT.md:
 
 Selection is capability driven: a pair or scenario an adapter cannot do is
 recorded as "skip" with the reason, never as "pass". Results go to
-<reports>/selftest.json and <reports>/selftest.md; the exit status is 1 when a
-scenario failed.
+<reports>/selftest.json, <reports>/selftest.md and <reports>/results.json (the
+organisation's interop-result-v1); the exit status is 1 when a scenario failed,
+a known difference no longer reproduces, or nothing passed.
 
 Environment:
   DOCKER            docker command (default "docker"; e.g. "sudo docker")
@@ -42,6 +43,7 @@ import argparse
 import json
 import os
 import queue
+import re
 import shlex
 import socket
 import subprocess
@@ -50,6 +52,8 @@ import tempfile
 import threading
 import time
 import uuid
+
+import interop_result
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALL_ADAPTERS = ["canutils", "pythoncan", "socketcanrs", "scapy", "pythoncanisotp", "cantools", "canmatrix"]
@@ -72,6 +76,8 @@ CAN_SFF_MASK = 0x7FF
 
 results = []
 DOCS = {}   # adapter -> every JSON document its containers printed
+WAIVERS_HIT = set()   # keys of tests/known-differences.tsv that reproduced
+WAIVERS_RAN = set()   # (fixture, kind) that had the chance to reproduce one
 
 
 def keep(adapter, docs):
@@ -82,9 +88,15 @@ def image(adapter):
     return TEMPLATE.format(adapter=adapter)
 
 
-def record(suite, scenario, status, detail="", sender="", receiver="", duration=0.0):
+def record(suite, scenario, status, detail="", sender="", receiver="", duration=0.0, waiver=None, missing=False):
+    """waiver: the id of the known difference behind status "known". missing:
+    a skip because of the host, not because a stack lacks the capability."""
     r = {"suite": suite, "scenario": scenario, "sender": sender, "receiver": receiver,
          "status": status, "detail": detail, "seconds": round(duration, 2)}
+    if waiver:
+        r["waiver"] = waiver
+    if missing:
+        r["missing"] = True
     results.append(r)
     pair = (sender + " -> " + receiver) if sender or receiver else ""
     print("%-5s %-6s %-28s %-30s %s" % (status.upper(), suite, scenario, pair, detail), flush=True)
@@ -577,7 +589,7 @@ def suite_interfaces(caps, sender, receivers):
                "exit 4: " + err.get("message", "") if ok else "exit %d %s" % (code, err), "", r)
     if ADMIN == "none":
         for r in receivers:
-            record("raw", "interface-down", "skip", "ADMIN=none: cannot change interfaces", "", r)
+            record("raw", "interface-down", "skip", "ADMIN=none: cannot change interfaces", "", r, missing=True)
         return
     for r in receivers:
         t0 = time.monotonic()
@@ -588,7 +600,7 @@ def suite_interfaces(caps, sender, receivers):
             continue
         if not ip("set", VCAN2, "down"):
             rx.finish(20)
-            record("raw", "interface-down", "skip", "cannot set %s down" % VCAN2, "", r)
+            record("raw", "interface-down", "skip", "cannot set %s down" % VCAN2, "", r, missing=True)
             continue
         code = rx.finish(20)
         took = time.monotonic() - t0
@@ -688,7 +700,7 @@ def suite_isotp(caps):
     receivers = [a for a in caps if "isotp-receive" in caps[a]["operations"]]
     if not kernel_has_isotp():
         for a in sorted(KERNEL_ISOTP & set(senders + receivers)):
-            record("isotp", "kernel-isotp", "skip", "the kernel of this host has no CAN_ISOTP (can-isotp module)", a, a)
+            record("isotp", "kernel-isotp", "skip", "the kernel of this host has no CAN_ISOTP (can-isotp module)", a, a, missing=True)
         senders = [a for a in senders if a not in KERNEL_ISOTP]
         receivers = [a for a in receivers if a not in KERNEL_ISOTP]
     for name, pargs, extra, need in ISOTP_CASES:
@@ -792,8 +804,30 @@ def known_differences():
             for line in f:
                 if line.strip() and not line.startswith("#"):
                     cols = line.rstrip("\n").split("\t")
-                    known[tuple(cols[:4])] = cols[4] if len(cols) > 4 else ""
+                    if len(cols) != 9:
+                        raise SystemExit("tests/known-differences.tsv: want 9 columns: %r" % line)
+                    known[tuple(cols[:4])] = dict(zip(("why", "id", "scope", "upstream_version", "evidence"), cols[4:]))
     return known
+
+
+def field_kind(field):
+    """What the scenario of a difference does: "decode" for "type", "raw",
+    "physical" and "label", otherwise the field itself."""
+    return "decode" if field in ("type", "raw", "physical", "label") else field
+
+
+def waive(known, key):
+    """The waiver id of a difference, or None when tests/known-differences.tsv
+    does not list it. Listing it does not make it pass: it is "known"."""
+    if key not in known:
+        return None
+    WAIVERS_HIT.add(key)
+    return known[key]["id"]
+
+
+def stale_waivers(known):
+    """The ids of listed differences whose scenario ran without showing them."""
+    return [w["id"] for k, w in known.items() if (k[0], field_kind(k[3])) in WAIVERS_RAN and k not in WAIVERS_HIT]
 
 
 def approx(a, b):
@@ -857,7 +891,7 @@ ARXML_PROBES = {
 }
 
 
-def probe_arxml(base, oracles):
+def probe_arxml(base, oracles, known):
     """Decode each probe frame with every oracle and compare with the
     expected raw values and labels."""
     frames = write_work("arxml-%s-probe.jsonl" % base, [p[0] for p in ARXML_PROBES[base]])
@@ -874,10 +908,15 @@ def probe_arxml(base, oracles):
             got = {k: (v.get("raw"), v.get("label")) for k, v in d.get("signals", {}).items()}
             if got != want:
                 diffs.append("%s: %s, want %s" % (msg, sorted(got.items()), sorted(want.items())))
-        status = "pass" if not diffs else ("fail" if o in ARXML_ORACLES[base] else "known")
+        waiver = None
+        if o not in ARXML_ORACLES[base]:
+            WAIVERS_RAN.add(("arxml-" + base, "probe"))
+            if diffs:
+                waiver = waive(known, ("arxml-" + base, o, "*", "probe"))
+        status = "pass" if not diffs else ("known" if waiver else "fail")
         record("dbc", "arxml-%s-%s" % (base, o), status,
                "%d probe frames decode as AUTOSAR defines" % len(ARXML_PROBES[base]) if not diffs else
-               "not an oracle for %s.arxml (docs/FIXTURES.md): %s" % (base, "; ".join(diffs)[:300]), o, "")
+               "not an oracle for %s.arxml (docs/FIXTURES.md): %s" % (base, "; ".join(diffs)[:300]), o, "", waiver=waiver)
 
 
 def suite_arxml(caps, oracles, known):
@@ -896,7 +935,7 @@ def suite_arxml(caps, oracles, known):
         base = name[:-6]
         db = "/fixtures/arxml/" + name
         if base in ARXML_PROBES:
-            probe_arxml(base, oracles)
+            probe_arxml(base, oracles, known)
             continue
         outs = {o: run(o, ["decode", "--db", db, "--frames", "/fixtures/arxml/%s.frames.jsonl" % base]) for o in oracles}
         compare_decoded("arxml-" + base, outs, a, b, known)
@@ -923,12 +962,14 @@ def suite_arxml(caps, oracles, known):
         dec = [d for d in docs if d.get("type") == "decoded"]
         seen[o] = dec[0]["signals"]["A"]["raw"] if dec else "error"
     applied = [o for o in oracles if seen[o] == str(0x33)]
-    status = "pass" if len(applied) == len(oracles) else "known"
+    WAIVERS_RAN.add(("arxml-pdu-offset", "offset"))
+    waiver = waive(known, ("arxml-pdu-offset", "Shifted", "A", "offset")) if len(applied) != len(oracles) else None
+    status = "pass" if len(applied) == len(oracles) else "known" if waiver else "fail"
     record("dbc", "arxml-pdu-offset", status,
            "signal A of a PDU at frame byte 2 decodes as %s (AUTOSAR: 51 = byte 2); %s" % (
                ", ".join("%s=%s" % (o, seen[o]) for o in oracles),
                "both apply the PDU offset" if status == "pass" else
-               "an oracle ignores PDU-TO-FRAME-MAPPING START-POSITION (tests/known-differences.tsv)"), a, b)
+               "an oracle ignores PDU-TO-FRAME-MAPPING START-POSITION (tests/known-differences.tsv)"), a, b, waiver=waiver)
 
 
 # ── logs ────────────────────────────────────────────────────────────────────
@@ -954,6 +995,7 @@ def suite_logs(caps):
     if "pythoncan" not in caps or "log-convert" not in caps["pythoncan"]["operations"]:
         record("logs", "log-convert", "skip", "needs pythoncan with log-convert")
         return
+    known = known_differences()
     feats = caps["pythoncan"]["features"]
     ldir = os.path.join(ROOT, "fixtures", "logs")
     source = _log_docs(os.path.join(ldir, "frames.jsonl"))
@@ -981,6 +1023,7 @@ def suite_logs(caps):
             continue
         back = _log_docs(os.path.join(WORK, f2))
         lossless = back == source
+        waiver = None
         if os.path.exists(ref_path):
             same = back == _log_docs(ref_path)
             status = "pass" if same else "fail"
@@ -989,11 +1032,13 @@ def suite_logs(caps):
                                                        "matches the committed reading" if same else "differs from the committed reading")
         else:
             survived = sum(1 for x, y in zip(source, back) if x == y)
-            status = "pass" if lossless else "known"
+            WAIVERS_RAN.add(("round-trip-" + ext, "lossy"))
+            waiver = waive(known, ("round-trip-" + ext, "*", "*", "lossy")) if not lossless else None
+            status = "pass" if lossless else "known" if waiver else "fail"
             detail = "%d of %d frames survive unchanged%s" % (survived, len(source), "" if lossless else " (docs/LOG_FORMATS.md)")
         if ext == "blf" and not lossless:
             status, detail = "fail", "BLF round trip is not lossless: " + detail
-        record("logs", "round-trip-" + ext, status, detail, "pythoncan", "")
+        record("logs", "round-trip-" + ext, status, detail, "pythoncan", "", waiver=waiver)
 
 
 def suite_kcd(caps, known):
@@ -1029,12 +1074,14 @@ def compare_decoded(base, outs, a, b, known):
     if len(da) != len(db_):
         record("dbc", "decode-" + base, "fail", "%d vs %d results" % (len(da), len(db_)), a, b)
         return
-    diffs, accepted, checked = [], [], 0
+    WAIVERS_RAN.add((base, "decode"))
+    diffs, accepted, checked, waiver = [], [], 0, None
     for x, y in zip(da, db_):
         msg = x.get("message") or "0x%X" % x.get("id", 0)
         if x["type"] != y["type"]:
             key = (base, msg, "*", "type")
             (accepted if key in known else diffs).append("%s: %s vs %s" % (msg, x["type"], y["type"]))
+            waiver = waive(known, key) or waiver
             continue
         if x["type"] != "decoded":
             continue
@@ -1050,10 +1097,11 @@ def compare_decoded(base, outs, a, b, known):
                     key = (base, msg, sig, field)
                     text = "%s.%s %s: %s=%r %s=%r" % (msg, sig, field, a, ax, b, ay)
                     (accepted if key in known else diffs).append(text)
+                    waiver = waive(known, key) or waiver
     status = "fail" if diffs else ("known" if accepted else "pass")
     detail = "; ".join(diffs[:4]) if diffs else ("%d values agree; known differences: %s" % (checked, "; ".join(accepted[:3]))
                                                  if accepted else "%d values agree" % checked)
-    record("dbc", "decode-" + base, status, detail, a, b)
+    record("dbc", "decode-" + base, status, detail, a, b, waiver=waiver)
 
 
 def compare_encoded(base, outs, a, b, known):
@@ -1063,7 +1111,8 @@ def compare_encoded(base, outs, a, b, known):
         return
     da = [d for d in da if d.get("type") in ("encoded", "encode-error")]
     db_ = [d for d in db_ if d.get("type") in ("encoded", "encode-error")]
-    diffs, accepted = [], []
+    WAIVERS_RAN.add((base, "encode"))
+    diffs, accepted, waiver = [], [], None
     for x, y in zip(da, db_):
         msg = x.get("message")
         same = x.get("type") == y.get("type") and (x.get("type") != "encoded" or
@@ -1072,15 +1121,57 @@ def compare_encoded(base, outs, a, b, known):
             key = (base, msg, "*", "encode")
             (accepted if key in known else diffs).append("%s: %s=%s %s=%s" % (
                 msg, a, x.get("data", x.get("error")), b, y.get("data", y.get("error"))))
+            waiver = waive(known, key) or waiver
     if len(da) != len(db_):
         diffs.append("%d vs %d results" % (len(da), len(db_)))
     status = "fail" if diffs else ("known" if accepted else "pass")
     record("dbc", "encode-" + base, status,
            "; ".join(diffs[:4]) or ("%d messages agree" % len(da)) + (("; known: " + "; ".join(accepted[:3])) if accepted else ""),
-           a, b)
+           a, b, waiver=waiver)
 
 
 # ── report ──────────────────────────────────────────────────────────────────
+
+OUTCOME = {"pass": "pass", "fail": "fail", "known": "known-difference"}
+
+
+def result_document(caps, versions, started):
+    """The run as interop-result-v1. A skip is "unsupported" when a stack lacks
+    the capability and "not-tested" when the host lacks a prerequisite."""
+    docs = []
+    for r in results:
+        roles = {k: r[k] for k in ("sender", "receiver") if r[k]} or {"harness": "selftest"}
+        outcome = OUTCOME.get(r["status"]) or ("not-tested" if r.get("missing") else "unsupported")
+        res = {"id": re.sub(r"[^a-z0-9._-]+", "-", "%s.%s" % (r["suite"], r["scenario"].lower())), "title": r["scenario"],
+               "suite": r["suite"], "roles": roles, "outcome": outcome, "durationMs": int(r["seconds"] * 1000)}
+        if r["status"] != "pass":
+            res["reason"] = r["detail"] or r["status"]
+        if r.get("waiver"):
+            res["waiver"] = r["waiver"]
+        docs.append(res)
+    implementations = []
+    for a in sorted(caps):
+        v = versions.get(a, {})
+        i = {"name": a, "version": str(v.get("version") or "unknown"), "independent": True}
+        for key in ("upstream", "revision"):
+            if v.get(key):
+                i[key] = str(v[key])
+        digest = interop_result.repo_digest(image(a), DOCKER)
+        if digest:
+            i["image"] = digest
+        implementations.append(i)
+    known = known_differences()
+    stale = stale_waivers(known)
+    seen = {k: w for k, w in known.items() if (k[0], field_kind(k[3])) in WAIVERS_RAN}
+    return {"schemaVersion": "1.0", "repository": "otfabric/canbus-interop",
+            "interopVersion": interop_result.version_field(ROOT, "interop_version"),
+            "contractVersion": interop_result.version_field(ROOT, "contract_version"),
+            "gitSha": interop_result.git_sha(ROOT), "startedAt": started, "finishedAt": interop_result.now(),
+            "host": interop_result.host(), "implementations": implementations or [{"name": "none", "version": "none"}],
+            "waivers": [{"id": w["id"], "scope": w["scope"], "evidence": w["evidence"], "reproduced": w["id"] not in stale}
+                        for w in seen.values()],
+            "reproduce": shlex.join(["python3", "scripts/selftest.py"] + sys.argv[1:]), "results": docs}
+
 
 def report(caps, outdir, started):
     os.makedirs(outdir, exist_ok=True)
@@ -1115,7 +1206,12 @@ def report(caps, outdir, started):
             f.write("| %s | %s | %s | %s | %s | %s |\n" % (r["suite"], r["scenario"], r["sender"], r["receiver"],
                                                           r["status"], r["detail"].replace("|", "\\|")[:200]))
     print("\n%s  (reports in %s)" % (", ".join("%d %s" % (v, k) for k, v in sorted(counts.items())), outdir))
-    return counts.get("fail", 0)
+    document = result_document(caps, versions, started)
+    interop_result.write(os.path.join(outdir, "results.json"), document)
+    problems = interop_result.problems(document)
+    for p in problems:
+        print("FAIL %s" % p)
+    return len(problems)
 
 
 # ── slcan (contract 1.2) ─────────────────────────────────────────────────────
@@ -1246,7 +1342,7 @@ def suite_xl(caps):
                    "only the CAN frame reached a receiver without --xl" if ok else "exit %s, got %s" % (code, got), s, r)
     mtu = int(open("/sys/class/net/%s/mtu" % VCAN).read())
     if mtu >= 76:
-        record("xl", "mtu-too-small", "skip", "%s has the CAN XL MTU %d (a new vcan does since Linux 6.2)" % (VCAN, mtu), xl[0], "")
+        record("xl", "mtu-too-small", "skip", "%s has the CAN XL MTU %d (a new vcan does since Linux 6.2)" % (VCAN, mtu), xl[0], "", missing=True)
     else:
         code, docs, _ = run(xl[0], ["send", "--interface", VCAN, "--xl", "--frames", "/fixtures/frames/xl.jsonl"])
         ok = code == 4 and any(d.get("code") == "interface" for d in docs)

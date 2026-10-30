@@ -58,6 +58,7 @@ ci: validate lint images smoke vcan selftest documents ## Full local CI on Linux
 
 validate: ## Check versions.yaml against the build inputs; validate the fixtures against schemas/
 	@scripts/check-versions.sh
+	@python3 -m unittest discover -q -s scripts -p 'test_*.py'
 	@if python3 -c 'import jsonschema' 2>/dev/null; then \
 		python3 scripts/validate-fixtures.py --require-schema; \
 	else \
