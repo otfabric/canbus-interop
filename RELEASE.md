@@ -34,6 +34,8 @@ Container contract 1.3: additions only, every v0.4.0 consumer keeps working.
   with fewer frames than asked for. candump now runs with `-L` (flushed log
   lines on stdout); `capture` writes the accepted lines.
 
+---
+
 ## v0.4.0
 
 **Date:** 2026-10-28
@@ -55,6 +57,8 @@ behaviour (rebuilt and re-tagged).
   is recorded as known. See docs/FIXTURES.md.
 * `scripts/validate-fixtures.py` follows multiplexed PDUs when it checks the
   encode vectors' signal names.
+
+---
 
 ## v0.3.0
 
