@@ -1,5 +1,9 @@
 # canbus-interop
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI Status](https://github.com/otfabric/canbus-interop/actions/workflows/ci.yml/badge.svg)](https://github.com/otfabric/canbus-interop/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/otfabric/canbus-interop?label=release)](https://github.com/otfabric/canbus-interop/releases)
+
 Independent CAN, ISO-TP and DBC reference implementations in containers, with
 one command-line contract, for interoperability testing of CAN software such
 as [go-canbus](https://github.com/otfabric/go-canbus). Nothing in this
