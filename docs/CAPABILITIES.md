@@ -72,6 +72,21 @@ All four use the kernel's `CAN_RAW`; see [the README](../README.md#what-independ
    (scenario `arxml-pdu-offset`, reported as `known`); see
    [FIXTURES.md](FIXTURES.md#arxml-fixturesarxml).
 
+## otfabric (OT Fabric's own stack, not a reference)
+
+The image of [own/go-canbus](../own/go-canbus/README.md) declares
+`independentEngine: false` (1.4). It runs in the same suites as a peer of every
+reference, so the scenarios above verify its declarations too:
+
+| Feature | otfabric | Verified by |
+|---------|:-:|---|
+| Raw CAN: `fd`, `brs`, `esi`, `remote`, `errorFrames`, `filters`, `invertFilters`, `joinFilters`, `recvOwn`, `disableLoopback`, capture / replay | ✓ | suite `raw`, every scenario above |
+| `errorFramesTx` | ✗ (go-canbus `socketcan.Conn.Send` refuses error frames) | – |
+| ISO-TP (userspace, go-canbus `isotp.Conn`): every feature above | ✓ | suite `isotp`, against the kernel and python-can-isotp |
+| DBC, KCD, ARXML decode and encode, `encodeRaw` | ✓ | suite `dbc`: every result equals that of cantools or canmatrix; `arxml-multiplexed-otfabric`, `arxml-pdu-offset` against the values AUTOSAR defines (go-canbus applies the PDU offset) |
+| `xl` | ✓ | suite `xl` |
+| `convert`, `log-convert`, `slcan` | not offered | – |
+
 ## Log formats (pythoncan `log-convert`, 1.1)
 
 | Feature | pythoncan | Verified by |

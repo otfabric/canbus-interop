@@ -11,7 +11,8 @@
     "version",
     "revision",
     "license",
-    "language"
+    "language",
+    "independentEngine"
   ],
   "properties": {
     "schemaVersion": {
@@ -46,6 +47,10 @@
     },
     "transport": {
       "type": "string"
+    },
+    "independentEngine": {
+      "type": "boolean",
+      "description": "false when the image is the library under test or a fork of it, never independent evidence for it (contract 1.4)"
     }
   }
 }

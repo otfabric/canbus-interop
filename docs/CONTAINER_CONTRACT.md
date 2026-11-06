@@ -1,6 +1,6 @@
 # Container contract
 
-Version: **1.3** (`contract_version` in [versions.yaml](../versions.yaml))
+Version: **1.4** (`contract_version` in [versions.yaml](../versions.yaml))
 
 Every adapter image exposes the same commands, flags, JSON documents and exit
 codes. Consumers (go-canbus's `interop/` suite, this repository's self-test)
@@ -15,12 +15,13 @@ compatible line and changes only with the major version.
 | 1.1 | [`log-convert`](#log-convert-pythoncan) (pythoncan): Vector ASC, Vector BLF, PEAK TRC, CSV and candump logs through python-can's readers and writers, `.jsonl` frame documents; capabilities `logAsc`, `logBlf`, `logTrc`, `logCsv`; result field `frames`. [ARXML](#arxml) databases for `decode`, `encode` (cantools, canmatrix) and `convert` (canmatrix); capability `arxml`. Fixtures `fixtures/logs/` and `fixtures/arxml/`. Additions only (canbus-interop v0.2.0) |
 | 1.3 | [CAN XL](#can-xl-canutils): [frame documents](#frame-document) with `"xl": true`, flag `--xl` on `send`, `receive` and `capture`; capability `xl` (canutils: cansend and candump of can-utils v2025.01, Linux ≥ 6.9). Fixture `fixtures/frames/xl.jsonl`. Additions only (canbus-interop v0.5.0) |
 | 1.2 | [slcan interfaces](#slcan-interfaces-pythoncan): `send` and `receive` with `--interface slcan:<pyserial URL>` (pythoncan, python-can's slcan interface over pyserial 3.5); capability `slcan`. Additions only (canbus-interop v0.3.0) |
+| 1.4 | [Version document](#version-document): `independentEngine`, `false` for an image of the library under test (OT Fabric's own stack, the adapter `otfabric`, [own/go-canbus](../own/go-canbus/README.md)); `true` in every adapter of this repository. Additions only (canbus-interop v0.7.0) |
 
 ## Image layout
 
 | Item | Value |
 |------|-------|
-| Image | `ghcr.io/otfabric/canbus-interop-<adapter>` |
+| Image | `ghcr.io/otfabric/canbus-interop-<adapter>`; OT Fabric's own stack is the adapter `otfabric` (`ghcr.io/otfabric/canbus-interop-otfabric`, tagged with go-canbus versions, not part of a release) |
 | Entrypoint | `canbus-interop` |
 | Default command | `print-capabilities` |
 | Network | `--network host`: CAN interfaces are network devices of a network namespace, and ordinary Docker networks do not carry CAN. The harness creates `vcan` interfaces in the host namespace and runs every container in it. CAN raw and ISO-TP sockets need no capability. |
@@ -266,6 +267,16 @@ output), `result`, `error`, `decoded`, `encoded`, `encode-input`.
 
 `esi`: the image can *transmit* a frame with the ESI flag set (receivers
 always report it).
+
+## Version document
+
+`print-version` prints one document: `adapter`, `upstream` (the stack's
+name), `repository`, `version`, `revision` (the upstream commit),
+`license`, `language`, optionally `isotp` and `transport`, and (1.4)
+`independentEngine`. `independentEngine` is `false` when the image is the
+library under test or a fork of it: a result against it is no independent
+evidence for that library, and `results.json` records the implementation
+with `"independent": false`.
 
 ## Exit codes
 

@@ -18,6 +18,7 @@ This repository follows **otfabric/engineering policy 1.2**, profile **interoper
 | Fixtures | fixtures/, docs/FIXTURES.md |
 | Expected deviations of the stacks | tests/known-differences.tsv |
 | Results | docs/COMPATIBILITY.md |
+| OT Fabric's own stack (image `otfabric`, not a reference) | own/go-canbus/README.md, `.github/workflows/own-go-canbus.yml` |
 
 ## Hard rules
 
@@ -34,7 +35,8 @@ This repository follows **otfabric/engineering policy 1.2**, profile **interoper
 |---|---|
 | anything | `make validate lint` |
 | an adapter | `make image-<adapter> smoke` |
-| behaviour on CAN | `make vcan selftest` |
+| behaviour on CAN | `make vcan interop` |
+| own/go-canbus | `make -f own/go-canbus/Makefile image smoke interop` (Linux with vcan) |
 | documents or the contract | `make documents` |
 | a release | `make release-notes VERSION=vX.Y.Z` |
 

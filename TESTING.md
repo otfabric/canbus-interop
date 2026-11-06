@@ -7,7 +7,7 @@
 | Build the images (host architecture) | `make images` | Docker |
 | Contract smoke test (capabilities, version, fixtures, exit 2 on unsupported operations and usage errors) | `make smoke` | Docker |
 | Create vcan0/vcan1 | `make vcan` | Linux with CAN modules, root |
-| Self-test, all suites | `make selftest` | the above |
+| Self-test, all suites | `make interop` (`scripts/interop.sh <adapter>...`; `make selftest` is the same) | the above |
 | One suite | `make selftest-raw`, `selftest-isotp`, `selftest-dbc`, `selftest-logs` | `dbc` and `logs` need no CAN |
 | ISO-TP suite in a microVM with the stock Ubuntu kernel | `scripts/microvm-isotp.sh` | Linux with KVM, QEMU, virtme-ng, Docker (to export the images) |
 | Validate every document kept by smoke and self-test | `make documents` | Python 3 |
@@ -27,7 +27,9 @@ exits 1 when anything failed.
 ## Environment variables of `scripts/selftest.py`
 
 `DOCKER` (e.g. `sudo docker`), `IMAGE_TEMPLATE` (default
-`ghcr.io/otfabric/canbus-interop-{adapter}:dev`), `ADAPTERS`, `SUITES`,
+`ghcr.io/otfabric/canbus-interop-{adapter}:dev`), `ADAPTER_IMAGE_<adapter>` (the
+image of one adapter, e.g. `ADAPTER_IMAGE_otfabric` for
+[own/go-canbus](own/go-canbus/README.md)), `ADAPTERS`, `SUITES`,
 `VCAN`, `VCAN2`, `ADMIN` (prefix of `ip link` for the interface down/up
 scenarios; `none` skips them), `REPORTS`, `WORK`.
 

@@ -17,6 +17,13 @@
 5. Add it to `ADAPTERS` in the Makefile and `ALL_ADAPTERS` in
    `scripts/selftest.py`; `make ci` on Linux.
 
+## OT Fabric's own stack
+
+`own/go-canbus/` (the `otfabric` image) and `.github/workflows/own-go-canbus.yml`
+are the one place that knows a library under test (REQUIREMENTS.md R1; CI greps
+for it). The image is not in `ADAPTERS` or a release; the scripts take it as
+`ADAPTER_IMAGE_otfabric`. See [own/go-canbus/README.md](own/go-canbus/README.md).
+
 ## Changing the contract
 
 Additions bump the minor `contract_version`, breaking changes the major one

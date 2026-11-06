@@ -2,6 +2,13 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.7.0
+
+Contract 1.4: `independentEngine` in the version document. OT Fabric's own
+go-canbus image (`own/go-canbus`, adapter `otfabric`, not in a release) with
+the manual Own stack workflow; `scripts/lib.sh` and `scripts/interop.sh`
+(`make interop`); the `dbc` suite checks further codecs against both oracles.
+
 ## v0.5.0
 
 Contract 1.3: CAN XL. Frame documents with `"xl": true`, `--xl` on send,

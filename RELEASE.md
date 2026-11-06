@@ -6,6 +6,34 @@ versions.yaml: the Release workflow builds and self-tests every image
 natively on amd64 and arm64, pushes `<image>:vX.Y.Z-<arch>`, joins them into
 the multi-arch `<image>:vX.Y.Z` and publishes the release with the digests.
 
+## v0.7.0
+
+**Date:** 2026-11-06
+**Previous release:** v0.6.0
+
+Container contract 1.4: additions only, every v0.6.0 consumer keeps working.
+
+### Added
+
+- The version document says whether the image is an independent
+  implementation (`independentEngine`); every adapter here declares `true`,
+  and `results.json` takes `independent` from it.
+- OT Fabric's own stack, go-canbus, behind the same contract:
+  `ghcr.io/otfabric/canbus-interop-otfabric` (adapter `otfabric`), so other
+  stacks can test against it. It is not a reference and not in this release:
+  the manual **Own stack (go-canbus)** workflow builds it from the latest
+  go-canbus release, tests it against the reference images of the latest
+  release and publishes it under go-canbus versions
+  ([own/go-canbus/README.md](own/go-canbus/README.md)).
+- `scripts/lib.sh` (`image_of`, `ADAPTER_IMAGE_<adapter>`) and
+  `scripts/interop.sh <adapter>...`, the entry point of the cross-stack
+  self-test (`make interop`; `make selftest` stays as its alias).
+- The `dbc` suite checks any further codec against both oracles: each result
+  must equal that of cantools or canmatrix.
+- REQUIREMENTS.md (R1, repository isolation), checked by CI.
+
+---
+
 ## v0.6.0
 
 **Date:** 2026-10-31

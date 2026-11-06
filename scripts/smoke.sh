@@ -6,19 +6,20 @@
 # exit 2 with an error document for an unsupported operation and for a usage
 # error. Documents go to $REPORTS/smoke (validate with validate-documents.py).
 #
-# Environment: DOCKER (default docker), IMAGE_TEMPLATE (as selftest.py),
-#              REPORTS (default reports).
+# Environment: DOCKER (default docker), as scripts/lib.sh (REGISTRY, VERSION,
+#              IMAGE_TEMPLATE, ADAPTER_IMAGE_<adapter>), REPORT_DIR or REPORTS
+#              (default reports).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# shellcheck source=scripts/lib.sh
+source scripts/lib.sh
 read -r -a DOCKER <<< "${DOCKER:-docker}"
-DEFAULT_TEMPLATE='ghcr.io/otfabric/canbus-interop-{adapter}:dev'
-TEMPLATE="${IMAGE_TEMPLATE:-$DEFAULT_TEMPLATE}"
-OUT="${REPORTS:-reports}/smoke"
+OUT="${REPORT_DIR:-${REPORTS:-reports}}/smoke"
 mkdir -p "$OUT"
 [[ $# -gt 0 ]] || set -- canutils pythoncan socketcanrs scapy pythoncanisotp cantools canmatrix
 fail=0
 for a in "$@"; do
-    img=$(printf %s "$TEMPLATE" | sed "s/{adapter}/$a/")
+    img=$(image_of "$a")
     run() { "${DOCKER[@]}" run --rm -i "$img" "$@"; }
     run print-capabilities > "$OUT/$a.capabilities.json"
     run print-version > "$OUT/$a.version.json"
@@ -39,6 +40,10 @@ for a in "$@"; do
     set +e; run "${ops%% *}" --no-such-flag > "$OUT/$a.usage.jsonl" 2>/dev/null; code=$?; set -e
     if [[ $code -ne 2 ]] || ! grep -q '"type":"error"' "$OUT/$a.usage.jsonl"; then
         echo "FAIL $a: an unknown flag should exit 2 with an error document (exit $code)"; fail=1
+    fi
+    # (1.4) The image says whether it is an independent implementation.
+    if ! python3 -c 'import json,sys; sys.exit(not isinstance(json.load(open(sys.argv[1])).get("independentEngine"), bool))' "$OUT/$a.version.json"; then
+        echo "FAIL $a: print-version has no boolean independentEngine"; fail=1
     fi
     echo "ok   $a: $(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["upstream"], d["version"])' "$OUT/$a.version.json") [$ops]"
 done

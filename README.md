@@ -51,7 +51,7 @@ On Linux with the CAN modules (Ubuntu: `linux-modules-extra-$(uname -r)`):
 ```sh
 make vcan                    # vcan0 and vcan1, CAN FD capable (sudo)
 make images                  # every image for this machine's architecture
-make smoke selftest          # contract smoke test, reference-to-reference self-test
+make smoke interop           # contract smoke test, reference-to-reference self-test
 ```
 
 On macOS or with Docker Desktop (no CAN in its kernel): `make images smoke
@@ -70,9 +70,18 @@ CAN interfaces belong to a network namespace and ordinary Docker networks do
 not carry CAN, so containers run with `--network host` against `vcan`
 interfaces of the host namespace ([docs/CONTAINER_CONTRACT.md](docs/CONTAINER_CONTRACT.md#image-layout)).
 
+## OT Fabric's own stack
+
+`ghcr.io/otfabric/canbus-interop-otfabric` is go-canbus behind the same contract,
+so you can test your stack against ours the way we test ours against yours.
+Despite the name it shares with the reference images, it is not an independent
+implementation and not part of a release of this repository, so its tags are
+go-canbus versions: see [own/go-canbus/README.md](own/go-canbus/README.md).
+
 ## Self-test
 
-`scripts/selftest.py` ([TESTING.md](TESTING.md)) runs, capability driven:
+`scripts/interop.sh <adapter>...` (`make interop`; the engine is
+`scripts/selftest.py`, [TESTING.md](TESTING.md)) runs, capability driven:
 
 * **raw**: every sender against every receiver for each frame fixture
   (11-bit, 29-bit, every classical length, every CAN FD length with and
@@ -92,7 +101,10 @@ interfaces of the host namespace ([docs/CONTAINER_CONTRACT.md](docs/CONTAINER_CO
   agree byte for byte and value for value; KCD and ARXML fixtures are
   converted by canmatrix and decoded by both. Accepted
   differences are listed in [tests/known-differences.tsv](tests/known-differences.tsv)
-  and reported as `known`, never as `pass`.
+  and reported as `known`, never as `pass`. Any other codec (the `otfabric`
+  image) must give, for every frame and message, the result of at least one
+  of the two oracles; ARXML multiplexing and PDU offsets are checked against
+  the values AUTOSAR defines.
 
 * **logs**: python-can's ASC, BLF, TRC and CSV writers and readers: the
   committed [log fixtures](fixtures/logs) read back as committed, and the

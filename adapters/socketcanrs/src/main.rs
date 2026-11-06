@@ -443,7 +443,7 @@ fn capabilities() -> String {
 fn version() -> String {
     let env = |k: &str| std::env::var(k).unwrap_or_default();
     format!(
-        "{{\"schemaVersion\":\"{}\",\"adapter\":\"socketcanrs\",\"upstream\":\"socketcan-rs\",\"repository\":\"https://github.com/socketcan-rs/socketcan-rs\",\"version\":{},\"revision\":{},\"license\":\"MIT\",\"language\":\"Rust\"}}",
+        "{{\"schemaVersion\":\"{}\",\"adapter\":\"socketcanrs\",\"upstream\":\"socketcan-rs\",\"repository\":\"https://github.com/socketcan-rs/socketcan-rs\",\"version\":{},\"revision\":{},\"license\":\"MIT\",\"language\":\"Rust\",\"independentEngine\":true}}",
         SCHEMA,
         quote(&env("UPSTREAM_VERSION")),
         quote(&env("UPSTREAM_REVISION"))
