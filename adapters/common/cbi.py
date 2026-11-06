@@ -528,6 +528,8 @@ def run(adapter, capabilities, version, handlers):
         elif cmd == "print-version":
             doc = {"schemaVersion": SCHEMA_VERSION, "adapter": adapter}
             doc.update(version)
+            # (1.4) Every adapter here wraps a third-party stack.
+            doc["independentEngine"] = True
             emit(doc)
         elif cmd == "print-fixture":
             path = os.path.normpath(os.path.join("/fixtures", args.path))

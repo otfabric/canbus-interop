@@ -28,6 +28,13 @@ jobs:
           python-version: "3.12"
       - run: pip install jsonschema
       - run: make validate lint
+      - name: No reference to a library under test
+        # REQUIREMENTS.md R1: adapters, fixtures, scripts and schemas must not
+        # know any consumer. Documentation may name consumers as examples.
+        run: |
+          if grep -rInE 'otfabric/go-|go-canbus|canbusctl' adapters fixtures schemas scripts tests Makefile; then
+            echo "::error::consumer-specific reference found"; exit 1
+          fi
 
   # Every image built natively on each architecture (no emulation), then the
   # contract smoke test and the whole reference-to-reference self-test on
@@ -74,7 +81,7 @@ jobs:
       - name: Self-test (${{ matrix.suites }})
         env:
           SUITES: ${{ matrix.suites }}
-        run: make selftest ADMIN=sudo
+        run: make interop ADMIN=sudo
 
       - name: Validate the documents
         if: always()

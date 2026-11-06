@@ -42,7 +42,7 @@ IMAGE_TEMPLATE = $(REGISTRY)/canbus-interop-{adapter}:$(VERSION)
 
 export REGISTRY VERSION
 
-.PHONY: help ci validate lint images smoke selftest selftest-raw selftest-isotp selftest-dbc selftest-logs documents vcan \
+.PHONY: help all ci validate lint images smoke interop selftest selftest-raw selftest-isotp selftest-dbc selftest-logs documents vcan \
 	print-adapters print-published-adapters capabilities buildx-setup buildx publish publish-arch publish-manifest \
 	digests release-notes clean FORCE
 FORCE:
@@ -50,7 +50,9 @@ FORCE:
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_%-]+:.*?## / {printf "\033[36m%-22s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-ci: validate lint images smoke vcan selftest documents ## Full local CI on Linux: validate, lint, build, smoke, self-test, validate documents
+all: validate images ## Validate the fixtures and build the local images
+
+ci: validate lint images smoke vcan interop documents ## Full local CI on Linux: validate, lint, build, smoke, self-test, validate documents
 	@echo ""
 	@echo "All local CI checks passed."
 
@@ -105,9 +107,11 @@ vcan: ## Load the CAN modules and create $(VCAN), $(VCAN2) and $(VCANXL) (CAN XL
 	@$(ADMIN) scripts/setup-vcan.sh $(VCAN) $(VCAN2) $(VCANXL)
 	@$(ADMIN) sh -c 'ip link set $(VCANXL) down && ip link set $(VCANXL) mtu 2060 && ip link set $(VCANXL) up' || echo "no CAN XL MTU on $(VCANXL) (Linux < 6.2): the xl suite fails"
 
-selftest: ## Reference-to-reference self-test of all suites on vcan (Linux; make vcan first)
-	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" VCAN=$(VCAN) VCAN2=$(VCAN2) VCANXL=$(VCANXL) ADMIN="$(ADMIN)" \
-		python3 scripts/selftest.py --reports reports
+interop: ## Cross-stack self-test of all suites on vcan, every pair of ADAPTERS (Linux; make vcan first)
+	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' VCAN=$(VCAN) VCAN2=$(VCAN2) VCANXL=$(VCANXL) ADMIN="$(ADMIN)" \
+		REPORT_DIR=reports scripts/interop.sh $(ADAPTERS)
+
+selftest: interop ## Same as interop
 
 selftest-%: FORCE ## One suite of the self-test: selftest-raw, selftest-isotp, selftest-dbc, selftest-logs (dbc and logs need no CAN)
 	@DOCKER="$(DOCKER)" IMAGE_TEMPLATE='$(IMAGE_TEMPLATE)' ADAPTERS="$(ADAPTERS)" SUITES=$* VCAN=$(VCAN) VCAN2=$(VCAN2) VCANXL=$(VCANXL) ADMIN="$(ADMIN)" \

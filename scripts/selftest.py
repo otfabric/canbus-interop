@@ -11,7 +11,7 @@ interfaces and checks the documents of docs/CONTAINER_CONTRACT.md:
           invalid sequences injected with a raw-CAN adapter
   dbc     cantools <-> canmatrix decode and encode agreement on the DBC,
           KCD and ARXML fixtures (tests/known-differences.tsv lists accepted
-          differences)
+          differences); any other codec must give the result of one of them
   logs    python-can's ASC, BLF, TRC and CSV writers and readers
           (log-convert): reproduction of fixtures/logs and the fidelity
           matrix of docs/LOG_FORMATS.md
@@ -28,6 +28,9 @@ Environment:
   DOCKER            docker command (default "docker"; e.g. "sudo docker")
   IMAGE_TEMPLATE    image name with {adapter} (default
                     "ghcr.io/otfabric/canbus-interop-{adapter}:dev")
+  ADAPTER_IMAGE_<adapter>
+                    the image of one adapter, in place of IMAGE_TEMPLATE
+                    (an image outside the release set, scripts/lib.sh)
   ADAPTERS          space-separated subset (default: all)
   SUITES            space-separated subset of raw isotp dbc logs slcan xl (default: all)
   VCAN, VCAN2       interfaces (default vcan0, vcan1)
@@ -85,7 +88,7 @@ def keep(adapter, docs):
 
 
 def image(adapter):
-    return TEMPLATE.format(adapter=adapter)
+    return os.environ.get("ADAPTER_IMAGE_" + adapter) or TEMPLATE.format(adapter=adapter)
 
 
 def record(suite, scenario, status, detail="", sender="", receiver="", duration=0.0, waiver=None, missing=False):
@@ -485,6 +488,9 @@ def suite_loopback(caps, sender, receivers):
     if not caps[sender]["features"].get("disableLoopback"):
         record("raw", "no-loopback", "skip", "lacks disableLoopback", sender, r or "")
         return
+    if r is None:
+        record("raw", "no-loopback", "skip", "no other raw receiver to check with", sender, "")
+        return
     frames = frames_fixture("standard")[:3]
     t0 = time.monotonic()
     rx, scode, _ = transfer(sender, r, frames, False, send_extra=["--no-loopback"], count=1, timeout_ms=5000)
@@ -865,6 +871,8 @@ def suite_dbc(caps):
             compare_encoded(base, outs, a, b, known)
     suite_kcd(caps, known)
     suite_arxml(caps, oracles, known)
+    for x in other_codecs(caps):
+        suite_dbc_against_oracles(caps, x, oracles, known)
 
 
 # Fixtures only one oracle reads: the self-test checks each oracle against
@@ -1041,6 +1049,121 @@ def suite_logs(caps):
         record("logs", "round-trip-" + ext, status, detail, "pythoncan", "", waiver=waiver)
 
 
+def other_codecs(caps):
+    """Adapters with decode besides the two DBC oracles."""
+    return [a for a in caps if a not in ("cantools", "canmatrix") and "decode" in caps[a]["operations"]]
+
+
+def _decoded(docs):
+    return [d for d in docs if d.get("type") in ("decoded", "decode-error")]
+
+
+def _encoded(docs):
+    return [d for d in docs if d.get("type") in ("encoded", "encode-error")]
+
+
+def _decode_mismatch(x, y):
+    """What differs between two results of one frame, [] when they agree."""
+    if x.get("type") != y.get("type"):
+        return ["%s vs %s" % (x.get("type"), y.get("type"))]
+    if x.get("type") != "decoded":
+        return []
+    out = []
+    sx, sy = x.get("signals", {}), y.get("signals", {})
+    for sig in sorted(set(sx) | set(sy)):
+        vx, vy = sx.get(sig), sy.get(sig)
+        for field in ("raw", "physical", "label"):
+            ax = vx.get(field) if vx else None
+            ay = vy.get(field) if vy else None
+            same = approx(ax, ay) if field == "physical" and ax is not None and ay is not None else ax == ay
+            if not same:
+                out.append("%s %s %r vs %r" % (sig, field, ax, ay))
+    return out
+
+
+def _encode_mismatch(x, y):
+    same = x.get("type") == y.get("type") and (x.get("type") != "encoded" or
+                                               (x.get("data") == y.get("data") and x.get("id") == y.get("id")))
+    return [] if same else ["%s vs %s" % (x.get("data", x.get("error")), y.get("data", y.get("error")))]
+
+
+def compare_with_oracles(kind, base, outs, x, oracles):
+    """An adapter other than the oracles against both: every result (decode:
+    every value of it) must equal what at least one oracle gives. Where the
+    oracles disagree (tests/known-differences.tsv) siding with either is
+    accepted; where they agree, a different result fails."""
+    pick, mismatch = (_decoded, _decode_mismatch) if kind == "decode" else (_encoded, _encode_mismatch)
+    bad = ["%s exit %d %s" % (a, outs[a][0], outs[a][2][-150:]) for a in [x] + oracles if outs[a][0] != 0]
+    if bad:
+        record("dbc", "%s-%s" % (kind, base), "fail", "; ".join(bad), x, "+".join(oracles))
+        return
+    rx = pick(outs[x][1])
+    ro = {o: pick(outs[o][1]) for o in oracles}
+    if any(len(r) != len(rx) for r in ro.values()):
+        record("dbc", "%s-%s" % (kind, base), "fail", "%d results vs %s" % (
+            len(rx), ", ".join("%s %d" % (o, len(r)) for o, r in ro.items())), x, "+".join(oracles))
+        return
+    diffs, sided = [], {o: 0 for o in oracles}
+    for i, item in enumerate(rx):
+        per = {o: mismatch(item, ro[o][i]) for o in oracles}
+        agree = [o for o in oracles if not per[o]]
+        if not agree:
+            name = item.get("message") or "0x%X" % item.get("id", 0)
+            diffs.append("%s: %s" % (name, "; ".join("%s: %s" % (o, ", ".join(per[o][:2])) for o in oracles)))
+        elif len(agree) == 1 and any(per[o] for o in oracles):
+            sided[agree[0]] += 1
+    detail = "; ".join(diffs[:3]) if diffs else "%d results agree with an oracle%s" % (
+        len(rx), "".join("; %d only with %s" % (n, o) for o, n in sided.items() if n))
+    record("dbc", "%s-%s" % (kind, base), "fail" if diffs else "pass", detail, x, "+".join(oracles))
+
+
+def suite_dbc_against_oracles(caps, x, oracles, known):
+    """Another codec (decode, encode) against the two oracles on the DBC,
+    ARXML and KCD fixtures."""
+    dbcdir = os.path.join(ROOT, "fixtures", "dbc")
+    for name in sorted(os.listdir(dbcdir)):
+        if not name.endswith(".dbc"):
+            continue
+        base = name[:-4]
+        db = "/fixtures/dbc/" + name
+        if os.path.exists(os.path.join(dbcdir, base + ".frames.jsonl")):
+            args = ["decode", "--db", db, "--frames", "/fixtures/dbc/%s.frames.jsonl" % base]
+            compare_with_oracles("decode", base, {a: run(a, args) for a in [x] + oracles}, x, oracles)
+        if "encode" in caps[x]["operations"] and os.path.exists(os.path.join(dbcdir, base + ".messages.jsonl")):
+            args = ["encode", "--db", db, "--messages", "/fixtures/dbc/%s.messages.jsonl" % base]
+            compare_with_oracles("encode", base, {a: run(a, args) for a in [x] + oracles}, x, oracles)
+    if not caps[x]["features"].get("arxml") or not all(caps[o]["features"].get("arxml") for o in oracles):
+        record("dbc", "arxml", "skip", "lacks arxml", x, "")
+        return
+    adir = os.path.join(ROOT, "fixtures", "arxml")
+    for name in sorted(os.listdir(adir)):
+        if not name.endswith(".arxml"):
+            continue
+        base = name[:-6]
+        db = "/fixtures/arxml/" + name
+        if base in ARXML_PROBES:
+            # Checked against the values AUTOSAR defines, not the oracles.
+            probe_arxml(base, [x], known)
+            continue
+        if base == "pdu-offset":
+            continue
+        args = ["decode", "--db", db, "--frames", "/fixtures/arxml/%s.frames.jsonl" % base]
+        compare_with_oracles("decode", "arxml-" + base, {a: run(a, args) for a in [x] + oracles}, x, oracles)
+        if "encode" in caps[x]["operations"]:
+            args = ["encode", "--db", db, "--messages", "/fixtures/arxml/%s.messages.jsonl" % base]
+            compare_with_oracles("encode", "arxml-" + base, {a: run(a, args) for a in [x] + oracles}, x, oracles)
+    # The PDU offset: AUTOSAR places signal A in frame byte 2 (0x33 here);
+    # both oracles ignore the offset (tests/known-differences.tsv).
+    frame = write_work("pdu-offset-probe-%s.jsonl" % x, [{"id": 0x300, "extended": False, "fd": False, "len": 8,
+                                                         "data": "1122334455667788"}])
+    code, docs, err = run(x, ["decode", "--db", "/fixtures/arxml/pdu-offset.arxml", "--frames", frame])
+    dec = [d for d in docs if d.get("type") == "decoded"]
+    got = dec[0]["signals"].get("A", {}).get("raw") if dec else "error: %s" % err[-150:]
+    ok = got == str(0x33)
+    record("dbc", "arxml-pdu-offset", "pass" if ok else "fail",
+           "signal A of a PDU at frame byte 2 decodes as %s (AUTOSAR: 51 = byte 2)" % got, x, "")
+
+
 def suite_kcd(caps, known):
     """canmatrix reads the KCD fixtures directly and converts them to DBC;
     cantools decodes with the converted DBC. Both decodings must agree."""
@@ -1062,6 +1185,9 @@ def suite_kcd(caps, known):
         outs = {"canmatrix": run("canmatrix", ["decode", "--db", "/fixtures/kcd/" + name, "--frames", frames]),
                 "cantools": run("cantools", ["decode", "--db", "/work/" + out, "--frames", frames])}
         compare_decoded("kcd-" + base, outs, "cantools", "canmatrix", known)
+        for x in other_codecs(caps):
+            outs[x] = run(x, ["decode", "--db", "/fixtures/kcd/" + name, "--frames", frames])
+            compare_with_oracles("decode", "kcd-" + base, outs, x, ["cantools", "canmatrix"])
 
 
 def compare_decoded(base, outs, a, b, known):
@@ -1152,7 +1278,10 @@ def result_document(caps, versions, started):
     implementations = []
     for a in sorted(caps):
         v = versions.get(a, {})
-        i = {"name": a, "version": str(v.get("version") or "unknown"), "independent": True}
+        # (1.4) What the image says of itself: an image of the library under
+        # test (independentEngine false) is never independent evidence.
+        i = {"name": a, "version": str(v.get("version") or "unknown"),
+             "independent": v.get("independentEngine") is not False}
         for key in ("upstream", "revision"):
             if v.get(key):
                 i[key] = str(v[key])

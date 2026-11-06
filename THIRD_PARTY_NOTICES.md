@@ -19,6 +19,7 @@ Each image carries this file and [licenses/](licenses) in
 | pythoncanisotp | python-can-isotp 2.0.7 (`can-isotp`) | MIT | [MIT](licenses/python-can-isotp-MIT.txt) | https://github.com/pylessard/python-can-isotp/tree/v2.0.7 |
 | cantools | cantools 45.1.1 and its dependencies (bitstruct, textparser, crccheck, argparse-addons: MIT) | MIT | [MIT](licenses/cantools-MIT.txt) | https://github.com/cantools/cantools/tree/45.1.1 |
 | canmatrix | canmatrix 1.3.3 and its dependencies (attrs: MIT, click: BSD-3-Clause, lxml: BSD-3-Clause) | BSD-2-Clause | [BSD-2-Clause](licenses/canmatrix-BSD-2-Clause.txt) | https://github.com/ebroecker/canmatrix |
+| otfabric (`own/go-canbus`, not in a release) | go-canbus (latest release when built) and the Go modules it links; Go standard library 1.27.2 | MIT; BSD-3-Clause (Go) | `/licenses/` in the image, one directory per module, with `BUNDLED-MODULES.txt` | https://github.com/otfabric/go-canbus, https://go.dev |
 | all | Debian bookworm base system, CPython 3.12 (official `python` and `debian` images) | Debian package licences (`/usr/share/doc/*/copyright` in each image), PSF-2.0 | in the image | https://hub.docker.com/_/debian, https://hub.docker.com/_/python |
 
 The Python adapters import their stack (python-can, Scapy, …) at run time;

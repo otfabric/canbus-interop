@@ -53,7 +53,7 @@ jobs:
         run: |
           make -j4 --output-sync=target images
           make smoke
-          make selftest ADMIN=sudo
+          make interop ADMIN=sudo
           make documents
 
       - name: Upload the reports
