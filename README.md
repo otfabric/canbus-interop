@@ -60,10 +60,10 @@ selftest-dbc` runs everything that does not need a CAN interface.
 Use a published image directly:
 
 ```sh
-docker run --rm --network host ghcr.io/otfabric/canbus-interop-canutils:v0.1.0 \
+docker run --rm --network host ghcr.io/otfabric/canbus-interop-canutils:v0.7.0 \
     receive --interface vcan0 --count 1 --fd
 echo '{"id":291,"fd":true,"brs":true,"len":12,"data":"000102030405060708090a0b"}' |
-    docker run --rm -i --network host ghcr.io/otfabric/canbus-interop-socketcanrs:v0.1.0 send --fd
+    docker run --rm -i --network host ghcr.io/otfabric/canbus-interop-socketcanrs:v0.7.0 send --fd
 ```
 
 CAN interfaces belong to a network namespace and ordinary Docker networks do
