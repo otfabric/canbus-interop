@@ -46,7 +46,11 @@ def main():
             w("| %s | %s |" % (sc, " | ".join(cells)))
         w("")
 
-    other = [r for r in res if not (r["sender"] and r["receiver"] and "+" not in r["receiver"]) or r["suite"] == "dbc"]
+    # Everything the pair tables above do not show: the dbc suite, scenarios
+    # without a sender/receiver pair, and the suites without a table (logs,
+    # slcan, xl), whose pair scenarios used to be left out.
+    other = [r for r in res if not (r["suite"] in ("raw", "isotp") and r["sender"] and r["receiver"]
+                                    and "+" not in r["receiver"])]
     w("## Other scenarios\n")
     w("| Suite | Scenario | Stacks | Result | Detail |\n|---|---|---|---|---|")
     for r in other:
