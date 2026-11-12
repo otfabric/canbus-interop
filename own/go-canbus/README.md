@@ -27,7 +27,7 @@ docker run --rm --network host ghcr.io/otfabric/canbus-interop-otfabric:<tag> \
     receive --interface vcan0 --fd --count 10 --timeout-ms 10000
 ```
 
-`<tag>` is a go-canbus version such as `v0.8.0`, or `latest`, the newest one
+`<tag>` is a go-canbus version such as `v0.9.1`, or `latest`, the newest one
 published. A rebuild of a version replaces its tag, so pin the digest if you need
 an exact build. The digest is in the summary of the
 [workflow run](https://github.com/otfabric/canbus-interop/actions/workflows/own-go-canbus.yml),
