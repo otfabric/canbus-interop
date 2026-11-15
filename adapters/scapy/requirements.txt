@@ -1,1 +1,6 @@
-scapy==2.8.0
+# Every package, including the transitive ones, is pinned by version and by
+# the sha256 of each wheel pip may install for CPython 3.12 on linux/amd64 and
+# linux/arm64 (the Dockerfile: pip install --require-hashes --only-binary=:all:
+# --no-deps). The hashes are those PyPI publishes for the release.
+scapy==2.8.0 \
+    --hash=sha256:abf855145ee829a42b2eb28983cd6a0a52b12a31d3f861cb7be36791195ed9aa

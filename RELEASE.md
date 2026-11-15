@@ -6,6 +6,60 @@ versions.yaml: the Release workflow builds and self-tests every image
 natively on amd64 and arm64, pushes `<image>:vX.Y.Z-<arch>`, joins them into
 the multi-arch `<image>:vX.Y.Z` and publishes the release with the digests.
 
+## v0.7.1
+
+**Date:** 2026-11-16
+**Previous release:** v0.7.0
+
+Container contract 1.4 unchanged: the images behave as in v0.7.0. Their
+build inputs are now pinned by hash, and they carry the licence texts in a
+second place as well.
+
+### Changed
+
+- Every Python image installs its packages, the transitive ones included,
+  only from wheels whose SHA-256 `adapters/<name>/requirements.txt` lists
+  (`pip install --require-hashes --only-binary=:all: --no-deps`); before, the
+  requirements named versions only. versions.yaml records the hash of every
+  implementation's artefact: `wheel_sha256` for the five Python stacks,
+  `source_sha256` for can-utils (the tarball) and socketcan-rs (the crate's
+  Cargo.lock checksum).
+- `scripts/check-versions.sh` (`make validate`) also fails when an
+  implementation has neither `source_sha256` nor `wheel_sha256`; a
+  requirement has no `--hash=sha256:` or is not pinned to one version; a
+  Python Dockerfile installs without `--require-hashes`,
+  `--only-binary=:all:` or `--no-deps`; the Cargo.lock checksum of socketcan
+  is not `source_sha256`; a base image of `own/*/Dockerfile` (through its
+  `ARG *_DIGEST` defaults) is not in `base_images`; or a workflow or the
+  Makefile installs or runs a tool at another version than `tools` in
+  versions.yaml. `scripts/test_check_versions.py` covers each case.
+- Every image also carries its licence texts under `/licenses/<component>/`:
+  LICENSE and THIRD_PARTY_NOTICES.md under `/licenses/canbus-interop/`, each
+  upstream text of `licenses/` under its component, and in the socketcanrs
+  image one directory per linked crate. `/usr/share/doc/` keeps them as
+  before. `scripts/smoke.sh` checks it in every image,
+  `scripts/test_licenses.py` the Dockerfiles against THIRD_PARTY_NOTICES.md.
+- jsonschema is installed at exactly 4.26.0 (`requirements-dev.txt`) by every
+  workflow and by the container fallback of `make validate` and
+  `make documents`, which now runs `python:3.12-slim-bookworm` by digest.
+- virtme-ng is installed at 1.42 in the microVM job; `make lint` without a
+  local shellcheck runs `koalaman/shellcheck:v0.11.0` by digest. versions.yaml
+  records the tools under `tools`.
+- The manual Own stack (go-canbus) workflow pulls the reference images by
+  the digests of the harness release's `manifest.json`
+  (`scripts/reference-images.sh`), not by tag, and lists them in its summary.
+  `own/go-canbus` builds against go-canbus v0.11.0 locally; the image takes
+  the latest go-canbus release, as before.
+
+### Unchanged
+
+- The exit codes of contract 1.4 (2 usage or unsupported, 3 timeout,
+  4 interface); every image and `own/go-canbus` return them as the contract
+  documents. Adopting the organisation exit codes is left to a later
+  contract version.
+
+---
+
 ## v0.7.0
 
 **Date:** 2026-11-06

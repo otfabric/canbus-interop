@@ -63,7 +63,10 @@ latest go-canbus release and the latest harness release, and prints them. It
 builds the image, loads the CAN modules and creates the `vcan` interfaces of
 the runner as CI does, runs the smoke test and the cross-stack self-test
 (suites `raw`, `isotp`, `dbc`, `xl`) against every reference on both
-architectures, then publishes `:<go-canbus version>` and `:latest`. Run from a
+architectures, then publishes `:<go-canbus version>` and `:latest`. It pulls
+the references by the digests in that release's `manifest.json`
+(`scripts/reference-images.sh`), not by tag, and lists them in the summary;
+a reference the manifest does not name by digest stops the run. Run from a
 branch, it stops before publishing. Nothing runs it automatically, so after a
 go-canbus release the image stays on the old version until someone does.
 

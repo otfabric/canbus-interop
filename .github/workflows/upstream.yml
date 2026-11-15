@@ -45,7 +45,7 @@ jobs:
           number=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number,title \
             --jq "[.[] | select(.title == env.TITLE)][0].number // empty")
           if [ "${BEHIND:-0}" -gt 0 ]; then
-            { cat table.md; echo; echo "Checked by the [Upstream workflow]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Bump a pin in its Dockerfile, requirements or lock file and versions.yaml, then let CI build and self-test it."; } > body.md
+            { cat table.md; echo; echo "Checked by the [Upstream workflow]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Bump a pin in its Dockerfile, requirements (with the sha256 of every wheel) or lock file and versions.yaml (source_sha256 or wheel_sha256), then let CI build and self-test it."; } > body.md
             if [ -n "$number" ]; then
               gh issue edit "$number" --body-file body.md
             else

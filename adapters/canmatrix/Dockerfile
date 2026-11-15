@@ -12,15 +12,20 @@ ENV UPSTREAM_REVISION=b79a35dd16cf28adeaa88cc86fa16e2f689312e5 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/opt/canbus-interop
 
-# Every package, including the transitive ones, is pinned.
+# Every package, including the transitive ones, is pinned by version and
+# installed only from a wheel whose sha256 requirements.txt lists.
 COPY adapters/canmatrix/requirements.txt /opt/canbus-interop/requirements.txt
-RUN pip install --no-cache-dir --root-user-action=ignore --no-deps -r /opt/canbus-interop/requirements.txt \
+RUN pip install --no-cache-dir --root-user-action=ignore --no-deps --only-binary=:all: --require-hashes \
+        -r /opt/canbus-interop/requirements.txt \
     && pip check
 
 COPY adapters/common/cbi.py adapters/canmatrix/adapter.py /opt/canbus-interop/
 COPY fixtures /fixtures
 COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/canbus-interop/
 COPY licenses /usr/share/doc/canbus-interop/licenses
+# The licence texts again under /licenses/<component>/ (THIRD_PARTY_NOTICES.md).
+COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/canbus-interop/
+COPY licenses/canmatrix-BSD-2-Clause.txt /licenses/canmatrix/
 RUN printf '#!/bin/sh\nexec python3 /opt/canbus-interop/adapter.py "$@"\n' > /usr/local/bin/canbus-interop \
     && chmod 0755 /usr/local/bin/canbus-interop
 
