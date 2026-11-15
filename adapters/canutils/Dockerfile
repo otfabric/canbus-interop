@@ -45,6 +45,9 @@ COPY adapters/common/cbi.py adapters/canutils/adapter.py /opt/canbus-interop/
 COPY fixtures /fixtures
 COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/canbus-interop/
 COPY licenses /usr/share/doc/canbus-interop/licenses
+# The licence texts again under /licenses/<component>/ (THIRD_PARTY_NOTICES.md).
+COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/canbus-interop/
+COPY licenses/can-utils-GPL-2.0-only.txt licenses/can-utils-BSD-3-Clause.txt licenses/can-utils-Linux-syscall-note.txt /licenses/can-utils/
 RUN printf '#!/bin/sh\nexec python3 /opt/canbus-interop/adapter.py "$@"\n' > /usr/local/bin/canbus-interop \
     && chmod 0755 /usr/local/bin/canbus-interop
 

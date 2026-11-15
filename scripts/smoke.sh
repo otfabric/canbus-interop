@@ -4,7 +4,8 @@
 # smoke.sh [adapter...]: the contract checks that need no CAN interface. For
 # every image: print-capabilities and print-version documents, print-fixture,
 # exit 2 with an error document for an unsupported operation and for a usage
-# error. Documents go to $REPORTS/smoke (validate with validate-documents.py).
+# error, licence texts under /licenses/<component>/. Documents go to
+# $REPORTS/smoke (validate with validate-documents.py).
 #
 # Environment: DOCKER (default docker), as scripts/lib.sh (REGISTRY, VERSION,
 #              IMAGE_TEMPLATE, ADAPTER_IMAGE_<adapter>), REPORT_DIR or REPORTS
@@ -44,6 +45,11 @@ for a in "$@"; do
     # (1.4) The image says whether it is an independent implementation.
     if ! python3 -c 'import json,sys; sys.exit(not isinstance(json.load(open(sys.argv[1])).get("independentEngine"), bool))' "$OUT/$a.version.json"; then
         echo "FAIL $a: print-version has no boolean independentEngine"; fail=1
+    fi
+    # The licence texts: the adapter's own and at least one other component.
+    if ! "${DOCKER[@]}" run --rm --entrypoint sh "$img" -c \
+        'test -s /licenses/canbus-interop/LICENSE && [ "$(ls /licenses | wc -l)" -ge 2 ]'; then
+        echo "FAIL $a: no licence texts under /licenses/<component>/"; fail=1
     fi
     echo "ok   $a: $(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["upstream"], d["version"])' "$OUT/$a.version.json") [$ops]"
 done

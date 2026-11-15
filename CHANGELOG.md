@@ -2,6 +2,16 @@
 
 Release notes with details: [RELEASE.md](RELEASE.md).
 
+## v0.7.1
+
+Contract 1.4 unchanged. The Python images install only hash-pinned wheels
+(`--require-hashes`); versions.yaml records `wheel_sha256` or
+`source_sha256` for every implementation and the tools (jsonschema 4.26.0,
+virtme-ng 1.42, shellcheck v0.11.0), and `scripts/check-versions.sh` checks
+them and the base images of `own/*/Dockerfile`. Licence texts also under
+`/licenses/<component>/` in every image. The Own stack workflow pulls the
+references by the digests of `manifest.json`.
+
 ## v0.7.0
 
 Contract 1.4: `independentEngine` in the version document. OT Fabric's own

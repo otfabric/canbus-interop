@@ -2,15 +2,15 @@
 
 | Check | Command | Needs |
 |-------|---------|-------|
-| Versions agree with the build inputs, fixtures are valid | `make validate` | Python 3 (jsonschema, else a container) |
+| Versions agree with the build inputs, every Python requirement and implementation is pinned by hash, the tools by version, fixtures are valid | `make validate` | Python 3 with jsonschema 4.26.0 (`pip install -r requirements-dev.txt`), else a container |
 | Shellcheck, Python byte-compile | `make lint` | shellcheck or Docker |
 | Build the images (host architecture) | `make images` | Docker |
-| Contract smoke test (capabilities, version, fixtures, exit 2 on unsupported operations and usage errors) | `make smoke` | Docker |
+| Contract smoke test (capabilities, version, fixtures, exit 2 on unsupported operations and usage errors, licence texts under `/licenses/`) | `make smoke` | Docker |
 | Create vcan0/vcan1 | `make vcan` | Linux with CAN modules, root |
 | Self-test, all suites | `make interop` (`scripts/interop.sh <adapter>...`; `make selftest` is the same) | the above |
 | One suite | `make selftest-raw`, `selftest-isotp`, `selftest-dbc`, `selftest-logs` | `dbc` and `logs` need no CAN |
 | ISO-TP suite in a microVM with the stock Ubuntu kernel | `scripts/microvm-isotp.sh` | Linux with KVM, QEMU, virtme-ng, Docker (to export the images) |
-| Validate every document kept by smoke and self-test | `make documents` | Python 3 |
+| Validate every document kept by smoke and self-test | `make documents` | Python 3 with jsonschema 4.26.0, else a container |
 | Everything | `make ci` | Linux with CAN modules |
 
 The self-test writes `reports/selftest.json`, `reports/selftest.md`,
@@ -98,6 +98,6 @@ Upstream workflow compares the pins with the latest upstream releases
 | Push to a branch | none | nothing; dispatch `ci.yml` to test a branch without a pull request |
 | Push to `main` | `policy.yml` | the light checks; the merged commit was tested as the pull request's merge commit |
 | Schedule | `upstream.yml` | the scheduled runs, on `main` |
-| Release | `release.yml` | the release workflow tests the release commit again |
+| Release | `release.yml` | on a `v*.*.*` tag or a manual run from `main`: the version check (versions.yaml and RELEASE.md name the tag); then natively on amd64 and on arm64 `make validate`, the image builds, `make smoke`, the whole self-test (`make interop`, every suite) and `make documents`, and only then the push of the tested images as `<tag>-<arch>`; last the multi-arch tags, `manifest.json` with the digests and the GitHub release. `make lint` and the microVM job do not run |
 
 Documentation means an added or modified `*.md` file outside `.github/`, `testdata/` and `vendor/`, other than `AGENTS.md` and `CLAUDE.md`. A deleted or renamed document, or any other file, runs everything. `OT Fabric Required Checks` fails unless every job that applies succeeded; its summary lists them.

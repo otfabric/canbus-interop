@@ -11,10 +11,11 @@ WORKDIR /src
 COPY adapters/socketcanrs/Cargo.toml adapters/socketcanrs/Cargo.lock ./
 COPY adapters/socketcanrs/src ./src
 RUN cargo build --release --locked \
-    && mkdir -p /out/licenses \
+    && mkdir -p /out/licenses /out/crates \
     && cp target/release/canbus-interop-socketcanrs /out/canbus-interop \
     && for d in "${CARGO_HOME:-/usr/local/cargo}"/registry/src/*/*/; do \
-         n=$(basename "$d"); for l in "$d"LICENSE*; do [ -f "$l" ] && cp "$l" "/out/licenses/$n-$(basename "$l")"; done; \
+         n=$(basename "$d"); for l in "$d"LICENSE*; do [ -f "$l" ] && cp "$l" "/out/licenses/$n-$(basename "$l")" \
+           && mkdir -p "/out/crates/$n" && cp "$l" "/out/crates/$n/"; done; \
        done; true
 
 FROM ${BASE_REGISTRY}/debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
@@ -27,6 +28,10 @@ COPY --from=build /out/licenses/ /usr/share/doc/socketcan-rs/crates/
 COPY fixtures /fixtures
 COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/canbus-interop/
 COPY licenses /usr/share/doc/canbus-interop/licenses
+# The licence texts again under /licenses/<component>/ (THIRD_PARTY_NOTICES.md).
+COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/canbus-interop/
+COPY licenses/socketcan-rs-MIT.txt /licenses/socketcan-rs/
+COPY --from=build /out/crates/ /licenses/
 
 LABEL org.opencontainers.image.source="https://github.com/otfabric/canbus-interop" \
       org.opencontainers.image.description="canbus-interop adapter: socketcan-rs 4.0.0" \

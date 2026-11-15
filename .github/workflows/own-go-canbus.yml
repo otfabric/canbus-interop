@@ -97,7 +97,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install jsonschema
+      - run: pip install -r requirements-dev.txt
 
       - name: Build from go-canbus ${{ needs.version.outputs.upstream }}
         run: |
@@ -125,13 +125,22 @@ jobs:
           ref: ${{ needs.version.outputs.harness }}
           path: harness
 
+      # By the digests in manifest.json of that release, not by tag: a tag
+      # pushed again after the release does not change what runs. The
+      # ADAPTER_IMAGE_<adapter> variables point the self-tests at them.
       - name: Pull the reference images of ${{ needs.version.outputs.harness }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          for a in ${REFERENCES}; do
-            scripts/retry.sh docker pull --quiet "ghcr.io/otfabric/canbus-interop-${a}:${VERSION}"
-            docker run --rm "ghcr.io/otfabric/canbus-interop-${a}:${VERSION}" print-version \
-              | jq -r --arg image "${a}:${VERSION}" '"- \($image): \(.upstream) \(.version)"' | tee -a "$GITHUB_STEP_SUMMARY"
-          done
+          set -euo pipefail
+          scripts/retry.sh gh release download "${VERSION}" --repo "${GITHUB_REPOSITORY}" --pattern manifest.json --dir harness-release
+          scripts/reference-images.sh harness-release/manifest.json ${REFERENCES} > references.env
+          while IFS='=' read -r _ ref <&3; do
+            scripts/retry.sh docker pull --quiet "${ref}"
+            docker run --rm "${ref}" print-version \
+              | jq -r --arg image "${ref}" '"- `\($image)`: \(.upstream) \(.version)"' | tee -a "$GITHUB_STEP_SUMMARY"
+          done 3< references.env
+          cat references.env >> "$GITHUB_ENV"
 
       # CAN interfaces are network devices of the runner: the containers run
       # with --network host on vcan0, vcan1 and vcanxl0, as in ci.yml. The
